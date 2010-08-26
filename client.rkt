@@ -1,4 +1,4 @@
-#lang s-exp "sklang.rkt"
+#lang s-exp "cs019.rkt"
 
 (require (only-in racket/base list->vector))
 (require racket/tcp)
@@ -31,8 +31,13 @@ sm
 
 22/7
 (build-list 3 add1)
-(define-struct f (a b))
-(make-f 1 2)
+(define-struct g (a b))
+(make-g 1 2)
 ; This is a real problem:
 ;   Actual value (1 2) differs from (3 4), the expected value.
 (check-expect (list 1 2) (list 3 4))
+
+(require 2htdp/image)
+(define i (open-image-url "http://racket-lang.org/logo.png"))
+(image-height i)
+(image-width i)
