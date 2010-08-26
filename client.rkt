@@ -41,3 +41,8 @@ sm
 (define i (open-image-url "http://racket-lang.org/logo.png"))
 (image-height i)
 (image-width i)
+
+(define ht (hash))
+(define ht2 (hash-set ht "x" 10))
+(hash-ref ht2 "x")
+(check-error (hash-ref ht "x") "hash-ref: no value found for key: \"x\"")

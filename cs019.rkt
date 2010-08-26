@@ -6,6 +6,14 @@
 
 (provide provide
          open-image-url
+         make-immutable-hash
+         hash
+         hash-set
+         hash-update
+         hash-iterate-first
+         hash-iterate-next
+         hash-iterate-key
+         hash-iterate-value
          require only-in except-in prefix-in rename-in combine-in only-meta-in for-syntax for-template for-label for-meta
          [except-out (all-from-out lang/htdp-advanced) #%module-begin]
          [rename-out (top-level #%module-begin)])
