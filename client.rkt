@@ -46,3 +46,8 @@ sm
 (define ht2 (hash-set ht "x" 10))
 (hash-ref ht2 "x")
 (check-error (hash-ref ht "x") "hash-ref: no value found for key: \"x\"")
+
+;(provide (all-defined-out))
+
+(define-struct tv (tag value))
+;(provide (struct-out tv))
