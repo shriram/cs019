@@ -51,3 +51,6 @@ sm
 
 (define-struct tv (tag value))
 ;(provide (struct-out tv))
+
+(big-bang 0 [on-tick add1] 
+            [on-draw (lambda (w) (overlay (circle (modulo w 50) "outline" "red") (empty-scene 100 100)))])

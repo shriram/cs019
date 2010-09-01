@@ -1,8 +1,10 @@
 #lang racket
 
-(require [except-in lang/htdp-advanced require]
+(require [except-in lang/htdp-advanced require image?]
          test-engine/scheme-tests
-         "open-image-url.rkt")
+         "open-image-url.rkt"
+         2htdp/image
+         2htdp/universe)
 
 (provide open-image-url
          make-immutable-hash
@@ -15,6 +17,8 @@
          hash-iterate-value
          require only-in except-in prefix-in rename-in combine-in
          provide all-defined-out all-from-out rename-out except-out prefix-out struct-out combine-out protect-out
+         [all-from-out 2htdp/universe]
+         [all-from-out 2htdp/image]
          [except-out (all-from-out lang/htdp-advanced) #%module-begin]
          [rename-out (top-level #%module-begin)])
 
