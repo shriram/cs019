@@ -12,7 +12,7 @@
          hash-iterate-key
          hash-iterate-value
          require only-in except-in prefix-in rename-in combine-in
-         provide all-defined-out all-from-out rename-out except-out prefix-out struct-out combine-out protect-out
+         provide all-defined-out all-from-out rename-out except-out prefix-out combine-out protect-out
          [all-from-out 2htdp/universe]
          [all-from-out 2htdp/image])
 

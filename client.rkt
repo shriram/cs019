@@ -20,6 +20,8 @@ true
 (make-g 1 2)
 
 (check-expect (build-list 5 add1) (list 1 2 3 4 5))
+(check-expect (make-g 1 2) (make-g 1 2))
+(check-expect (make-g 'b empty) (make-g 'b empty))
 
 (define i (open-image-url "http://racket-lang.org/logo.png"))
 (check-expect (image-height i) 85)
