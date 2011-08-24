@@ -3,15 +3,12 @@
 (require 2htdp/image
          2htdp/universe)
 
-(provide make-immutable-hash
-         hash
-         hash-set
-         hash-update
+(provide hash
          hash-iterate-first
          hash-iterate-next
          hash-iterate-key
          hash-iterate-value
-         require only-in except-in prefix-in rename-in combine-in
+         require only-in except-in prefix-in rename-in combine-in planet
          provide all-defined-out all-from-out rename-out except-out prefix-out combine-out protect-out
          [all-from-out 2htdp/universe]
          [all-from-out 2htdp/image])
