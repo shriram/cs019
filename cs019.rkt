@@ -1,32 +1,30 @@
 #lang racket
 
-(require [except-in lang/htdp-advanced require image? #%module-begin]
-         [only-in lang/htdp-advanced (#%module-begin asl:module-begin)]
-         test-engine/scheme-tests
-         "open-image-url.rkt"
-         2htdp/image
-         2htdp/universe
-         deinprogramm/signature/signature)
+(require racket/provide) ;; to get provide's filtered-out
+(require (prefix-in bsl: (except-in lang/htdp-beginner image? require #%module-begin)))
+(require (only-in lang/htdp-beginner (#%module-begin bsl:module-begin)))
+(provide (filtered-out (lambda (name)
+                         (and (regexp-match #rx"^bsl:" name)
+                              (regexp-replace #rx"^bsl:" name "")))
+                       (all-from-out lang/htdp-beginner)))
+(provide (rename-out (top-level #%module-begin)))
 
-(provide open-image-url
-         make-immutable-hash
-         hash hash-set hash-update
-         hash-iterate-first hash-iterate-next hash-iterate-key hash-iterate-value
-         require only-in except-in prefix-in rename-in combine-in planet
-         provide all-defined-out all-from-out rename-out except-out 
-                 prefix-out struct-out combine-out protect-out
-         [all-from-out 2htdp/universe]
-         [all-from-out 2htdp/image]
-         [except-out (all-from-out lang/htdp-advanced) asl:module-begin]
-         [rename-out (top-level #%module-begin)])
+(require "open-image-url.rkt")
+(provide open-image-url)
 
-(require mzlib/pconvert)
-(constructor-style-printing true)
-(install-converting-printer)
-(print-as-expression false)
-(abbreviate-cons-as-list false)
+(require 2htdp/image 2htdp/universe)
+(provide [all-from-out 2htdp/universe] [all-from-out 2htdp/image])
+
+; From Racket:
+(provide make-immutable-hash hash hash-set hash-update
+         hash-iterate-first hash-iterate-next hash-iterate-key hash-iterate-value)
+(provide require only-in except-in prefix-in rename-in combine-in planet)
+(provide provide all-defined-out all-from-out rename-out except-out 
+                 prefix-out struct-out combine-out protect-out)
+
+(require test-engine/scheme-tests) ;; for run-tests and display-results
 
 (define-syntax (top-level body-exprs)
   (syntax-case body-exprs ()
     [(_ bodies ...)
-     #'(asl:module-begin bodies ... (run-tests) (display-results))]))
+     #'(bsl:module-begin bodies ... (run-tests) (display-results))]))
