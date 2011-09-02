@@ -25,8 +25,3 @@
                    (loop (rest preds) (rest args) (add1 n))
                    (error 'signature "violation of argument signature ~a in position ~a"
                           (first preds) n)))))]))
-
-(define: (f [x : number?] [y : number?]) : number?
-  (+ x y))
-(define: x : number? 3)
-(define: y : string? 3)
