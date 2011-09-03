@@ -1,10 +1,12 @@
 #lang racket
 
 (require (only-in lang/htdp-advanced [define asl:define] [lambda asl:lambda]))
-(require [for-syntax syntax/parse])
+(require [for-syntax syntax/parse]
+         [for-syntax syntax/struct])
+(require syntax/struct)
 (require [for-syntax racket])
 
-(provide define: and: or: not: : defvar:)
+(provide define: and: or: not: : defvar: define-struct:)
 
 (define-syntax (: stx) (raise-syntax-error stx ': "Cannot be used outside ..."))
 
@@ -39,6 +41,29 @@
 
 (define (not: p)
   (lambda (x) (not (p x))))
+
+(define-syntax (define-struct: stx)
+  (syntax-case stx (:)
+    [(_ s ([f : C] ...))
+     (with-syntax ([(names ...) 
+                    (build-struct-names #'s
+                                        (syntax->list #'(f ...)) 
+                                        #f #f)]
+                   [orig stx])
+       (with-syntax ([cnstr (syntax-case #'(names ...) ()
+                              [(struct:name-id constructor misc ...)
+                               #'constructor])])
+         #'(define-values (names ...)
+             (let ()
+               (begin
+                 (define-struct s (f ...) #:transparent #:mutable)
+                 (let ([cnstr (lambda args
+                                (display "constructing")
+                                (newline)
+                                (apply cnstr args))])
+                   (values names ...)))))))]))
+
+(define-struct: p ([x : number?] [y : number?]))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)
