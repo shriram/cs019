@@ -2,7 +2,8 @@
 
 (require racket/provide) ;; to get provide's filtered-out
 (require (prefix-in bsl: 
-                    (except-in lang/htdp-advanced : image? require #%module-begin)))
+                    (except-in lang/htdp-advanced 
+                               : image? require #%module-begin)))
 (require (only-in lang/htdp-advanced (#%module-begin bsl:module-begin)))
 (provide (filtered-out (lambda (name)
                          (and (regexp-match #rx"^bsl:" name)
@@ -14,7 +15,7 @@
 (provide open-image-url)
 
 (require "sigs.rkt")
-(provide define:)
+(provide [all-from-out "sigs.rkt"])
 
 (require 2htdp/image 2htdp/universe)
 (provide [all-from-out 2htdp/universe] [all-from-out 2htdp/image])

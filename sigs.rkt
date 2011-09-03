@@ -1,20 +1,59 @@
 #lang racket
 
-;(require-for-syntax (only-in lang/htdp-advanced [define asl:define]))
+(require (only-in lang/htdp-advanced [define asl:define] [lambda asl:lambda]))
+(require [for-syntax syntax/parse])
+(require [for-syntax racket])
 
-(provide define:)
+(provide define: and: or: not: : defvar:)
+
+(define-syntax (: stx) (raise-syntax-error stx ': "Cannot be used outside ..."))
+
+(define-syntax (defvar: stx)
+  (syntax-parse stx #:literals(:)
+    [(_ i:id : C:expr b:expr)
+     #'(asl:define i
+         (let ([e b])
+           (if (C e)
+               e
+               (error 'signature "violation of ~a" C))))]))
+
+(define-syntax (or: stx)
+  (syntax-case stx ()
+    [(_ p ...)
+     #'(lambda (x)
+         (let loop ([preds (list p ...)])
+           (if (empty? preds)
+               false
+               (or ((first preds) x)
+                   (loop (rest preds))))))]))
+
+(define-syntax (and: stx)
+  (syntax-case stx ()
+    [(_ p ...)
+     #'(lambda (x)
+         (let loop ([preds (list p ...)])
+           (if (empty? preds)
+               true
+               (and ((first preds) x)
+                    (loop (rest preds))))))]))
+
+(define (not: p)
+  (lambda (x) (not (p x))))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)
     [(_ id : C exp)
      (identifier? #'id)
-     #'(define id
+     #'(asl:define id
          (let ([e exp])
            (if (C e)
                e
                (error 'signature "violation of ~a" C))))]
-    [(_ (f [a : Ca] ...) : Cr exp)
-     #'(define (f a ...)
+    [(_ (f [a : Ca] ...) : Cr exp) 
+     ;; Assumes only one body term.
+     ;; Use of asl:define doesn't automatically ensure this because binding
+     ;; v to exp ... would require a begin, which masks the # of terms.
+     #'(asl:define (f a ...)
          (let loop ([preds (list Ca ...)] [args (list a ...)] [n 1])
            (if (empty? args)
                (let ([v exp])
