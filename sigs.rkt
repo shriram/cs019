@@ -21,7 +21,7 @@
                                                (string-append
                                                 (symbol->string
                                                  (syntax->datum #'s))
-                                                "S")))]
+                                                "$")))]
                      [cnstr (syntax-case #'(names ...) ()
                               [(struct:name-id constructor misc ...)
                                #'constructor])]
@@ -52,7 +52,7 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide NumberS StringS)
+(provide Number$ String$)
 
 (define-struct signature (pred wrapper ho?))
 
@@ -64,8 +64,8 @@
                         (error 'signature-violation "~s is not a ~a" v descr)))
                   false))
 
-(define NumberS (first-order-sig number? "number"))
-(define StringS (first-order-sig string? "number"))
+(define Number$ (first-order-sig number? "number"))
+(define String$ (first-order-sig string? "string"))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)

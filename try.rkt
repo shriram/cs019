@@ -1,12 +1,12 @@
 #lang s-exp "cs019.rkt"
 
-(define: (g [x : NumberS]) : NumberS "x")
+(define: (g [x : Number$]) : Number$ "x")
 ;(g 10)
 ;(g "x")
 
-(define: (f [x : NumberS] [y : NumberS]) : NumberS
+(define: (f [x : Number$] [y : Number$]) : Number$
   (+ x y))
-(define: x : NumberS 3)
+(define: x : Number$ 3)
 ;(define: y : string? 4)
 
 (check-expect (f 10 12) 22)
@@ -26,8 +26,8 @@
 (make-n 5)
 (m? (make-n 5))
 (n? (make-n 5))
-(define-struct: p ([x : NumberS] [y : NumberS]))
-(define: (h [p : pS]) : NumberS
+(define-struct: p ([x : Number$] [y : Number$]))
+(define: (h [p : p$]) : Number$
   (p-x p))
 (h (make-p 1 2))
 (h (make-p 3 4))
