@@ -1,11 +1,11 @@
 #lang racket
 
 (require racket/provide) ;; to get provide's filtered-out
-(require (prefix-in bsl: (except-in lang/htdp-advanced image? require #%module-begin)))
-(require (only-in lang/htdp-advanced (#%module-begin bsl:module-begin)))
+(require (prefix-in asl: (except-in lang/htdp-advanced image? require #%module-begin)))
+(require (only-in lang/htdp-advanced (#%module-begin asl:module-begin)))
 (provide (filtered-out (lambda (name)
-                         (and (regexp-match #rx"^bsl:" name)
-                              (regexp-replace #rx"^bsl:" name "")))
+                         (and (regexp-match #rx"^asl:" name)
+                              (regexp-replace #rx"^asl:" name "")))
                        (all-from-out lang/htdp-advanced)))
 (provide (rename-out (top-level #%module-begin)))
 
@@ -28,4 +28,4 @@
 (define-syntax (top-level body-exprs)
   (syntax-case body-exprs ()
     [(_ bodies ...)
-     #'(bsl:module-begin bodies ... (run-tests) (display-results))]))
+     #'(asl:module-begin bodies ... (run-tests) (display-results))]))
