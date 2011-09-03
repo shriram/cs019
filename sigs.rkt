@@ -16,43 +16,66 @@
                                         (syntax->list #'(f ...)) 
                                         #f #f)]
                    [orig stx])
-       (with-syntax ([cnstr (syntax-case #'(names ...) ()
+       (with-syntax ([sig-name (datum->syntax #'s
+                                              (string->symbol
+                                               (string-append
+                                                (symbol->string
+                                                 (syntax->datum #'s))
+                                                "S")))]
+                     [cnstr (syntax-case #'(names ...) ()
                               [(struct:name-id constructor misc ...)
-                               #'constructor])])
-         #'(define-values (names ...)
-             (let ()
-               (begin
-                 (define-struct s (f ...) #:transparent #:mutable)
-                 (let ([cnstr (lambda args
-                                (display "constructing")
-                                (newline)
-                                (apply cnstr args))])
-                   (values names ...)))))))]))
+                               #'constructor])]
+                     [pred (syntax-case #'(names ...) ()
+                             [(srtuct:name-id const predicate misc ...)
+                              #'predicate])])
+         #'(begin
+             (define-values (names ...)
+               (let ()
+                 (begin
+                   (define-struct s (f ...) #:transparent #:mutable)
+                   (let ([cnstr 
+                          (lambda (f ...)
+                            (let ([wrapped-args
+                                   (let loop ([sigs (list C ... )]
+                                              [args (list f ...)]
+                                              [n 1])
+                                     (if (empty? sigs)
+                                         empty
+                                         (cons (wrap (first sigs) 
+                                                     (first args))
+                                               (loop (rest sigs) (rest args) (add1 n)))))])
+                              (apply cnstr wrapped-args)))])
+                     (values names ...)))))
+             (define sig-name (first-order-sig pred 
+                                               (symbol->string 's))))))]))
+
+(define (wrap sig val)
+  ((signature-wrapper sig) val))
+
+(provide NumberS StringS)
+
+(define-struct signature (pred wrapper ho?))
+
+(define (first-order-sig pred? descr)
+  (make-signature pred?
+                  (lambda (v)
+                    (if (pred? v)
+                        v
+                        (error 'signature-violation "~s is not a ~a" v descr)))
+                  false))
+
+(define NumberS (first-order-sig number? "number"))
+(define StringS (first-order-sig string? "number"))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)
     [(_ id : C exp)
      (identifier? #'id)
-     #'(asl:define id
-         (let ([e exp])
-           (if (C e)
-               e
-               (error 'signature "violation of ~a" C))))]
+     #'(asl:define id (wrap C exp))]
     [(_ (f [a : Ca] ...) : Cr exp) 
-     ;; Assumes only one body term.
-     ;; Use of asl:define doesn't automatically ensure this because binding
-     ;; v to exp ... would require a begin, which masks the # of terms.
      #'(asl:define (f a ...)
-         (let loop ([preds (list Ca ...)] [args (list a ...)] [n 1])
-           (if (empty? args)
-               (let ([v exp])
-                 (if (Cr v)
-                     v
-                     (error 'signature "violation of return signature ~a" Cr)))
-               (if ((first preds) (first args))
-                   (loop (rest preds) (rest args) (add1 n))
-                   (error 'signature "violation of argument signature ~a in position ~a"
-                          (first preds) n)))))]))
+                   (let ([a (wrap Ca a)] ...)
+                     (wrap Cr exp)))]))
 
 (define-syntax (or: stx)
   (syntax-case stx ()
