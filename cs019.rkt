@@ -1,7 +1,6 @@
 #lang racket
 
 (require racket/provide) ;; to get provide's filtered-out
-<<<<<<< HEAD
 (require (prefix-in asl: 
                     (except-in lang/htdp-advanced 
                                : image? require #%module-begin)))
