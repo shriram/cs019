@@ -6,41 +6,7 @@
 (require syntax/struct)
 (require [for-syntax racket])
 
-(provide define: and: or: not: : defvar: define-struct:)
-
-(define-syntax (: stx) (raise-syntax-error stx ': "Cannot be used outside ..."))
-
-(define-syntax (defvar: stx)
-  (syntax-parse stx #:literals(:)
-    [(_ i:id : C:expr b:expr)
-     #'(asl:define i
-         (let ([e b])
-           (if (C e)
-               e
-               (error 'signature "violation of ~a" C))))]))
-
-(define-syntax (or: stx)
-  (syntax-case stx ()
-    [(_ p ...)
-     #'(lambda (x)
-         (let loop ([preds (list p ...)])
-           (if (empty? preds)
-               false
-               (or ((first preds) x)
-                   (loop (rest preds))))))]))
-
-(define-syntax (and: stx)
-  (syntax-case stx ()
-    [(_ p ...)
-     #'(lambda (x)
-         (let loop ([preds (list p ...)])
-           (if (empty? preds)
-               true
-               (and ((first preds) x)
-                    (loop (rest preds))))))]))
-
-(define (not: p)
-  (lambda (x) (not (p x))))
+(provide define: define-struct: and: or: not:)
 
 (define-syntax (define-struct: stx)
   (syntax-case stx (:)
@@ -62,8 +28,6 @@
                                 (newline)
                                 (apply cnstr args))])
                    (values names ...)))))))]))
-
-(define-struct: p ([x : number?] [y : number?]))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)
@@ -89,3 +53,41 @@
                    (loop (rest preds) (rest args) (add1 n))
                    (error 'signature "violation of argument signature ~a in position ~a"
                           (first preds) n)))))]))
+
+(define-syntax (or: stx)
+  (syntax-case stx ()
+    [(_ p ...)
+     #'(lambda (x)
+         (let loop ([preds (list p ...)])
+           (if (empty? preds)
+               false
+               (or ((first preds) x)
+                   (loop (rest preds))))))]))
+
+(define-syntax (and: stx)
+  (syntax-case stx ()
+    [(_ p ...)
+     #'(lambda (x)
+         (let loop ([preds (list p ...)])
+           (if (empty? preds)
+               true
+               (and ((first preds) x)
+                    (loop (rest preds))))))]))
+
+(define (not: p)
+  (lambda (x) (not (p x))))
+
+#|
+(provide : defvar:)
+
+(define-syntax (: stx) (raise-syntax-error stx ': "Cannot be used outside ..."))
+
+(define-syntax (defvar: stx)
+  (syntax-parse stx #:literals(:)
+    [(_ i:id : C:expr b:expr)
+     #'(asl:define i
+         (let ([e b])
+           (if (C e)
+               e
+               (error 'signature "violation of ~a" C))))]))
+|#
