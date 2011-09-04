@@ -17,12 +17,31 @@
 (check-expect (f 10 12) 22)
 
 (define-struct: swf ([f : (Number$ -> Number$)]))
-(check-expect ((swf-f (make-swf add1)) 10) 11)
+(define a-swf (make-swf add1))
+(check-expect ((swf-f a-swf) 10) 11)
+(check-error (set-swf-f! a-swf 3))
+
+(define broken-swf (make-swf add1))
+(set-swf-f! broken-swf number->string) ;; first-order check succeeds
+(check-error ((swf-f broken-swf) 3))  ;; contract violation
+
+(check-expect (let ([a (make-swf add1)])
+                (list ((swf-f a) 10)
+                      (begin (set-swf-f! a sub1)
+                             ((swf-f a) 10))))
+              (list 11 9))
 
 (define Tree$ (or: mt$ nd$))
 (define-struct mt ())
 (define mt$ (pred->sig mt?))
 (define-struct: nd ([v : Number$] [l : Tree$] [r : Tree$]))
+
+(check-expect (let ([n (make-nd 0 (make-mt) (make-mt))])
+                (begin
+                  (set-nd-v! n 5)
+                  (set-nd-l! n (make-nd 1 (make-mt) (make-mt)))
+                  n))
+              (make-nd 5 (make-nd 1 (make-mt) (make-mt)) (make-mt)))
 
 (define: (a (t : mt$)) -> Number$
   (cond

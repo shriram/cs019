@@ -38,8 +38,12 @@
                      [cnstr (syntax-case #'(names ...) ()
                               [(struct:name-id constructor misc ...)
                                #'constructor])]
+                     [(_sid _ctr _id? setters ...)
+                      (build-struct-names #'sn
+                                          (syntax->list #'(f ...))
+                                          #t #f)]
                      [pred (syntax-case #'(names ...) ()
-                             [(srtuct:name-id const predicate misc ...)
+                             [(struct:name-id const predicate misc ...)
                               #'predicate])])
          #'(begin
              (define-values (names ...)
@@ -57,7 +61,11 @@
                                          (cons (wrap (first sigs) 
                                                      (first args))
                                                (loop (rest sigs) (rest args) (add1 n)))))])
-                              (apply cnstr wrapped-args)))])
+                              (apply cnstr wrapped-args)))]
+                         [setters
+                          (lambda (struct-inst new-val)
+                            (setters struct-inst (wrap S new-val)))]
+                         ...)
                      (values names ...)))))
              ;; This could be a define below, but it's a define-values
              ;; due to a bug in ISL's local.  See users@racket-lang.org
