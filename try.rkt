@@ -41,6 +41,20 @@
                                 (make-nd 5 (make-mt) (make-mt))
                                 (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt)))))
 
+(define: (prime? [n : (pred->sig (lambda (n) (and (positive? n) (integer? n))))]) 
+  -> Boolean$
+  (local ([define (check k)
+            (if (>= k n)
+                true
+                (if (= (remainder n k) 0)
+                    false
+                    (check (add1 k))))])
+    (check 2)))
+(check-expect (prime? 10) false)
+(check-expect (prime? 5) true)
+(check-error (prime? -1))
+(check-error (prime? 1.5))
+
 (define BadSig$ (or: (proc: (Number$ -> Number$)) Number$))
 ;(define: bs : BadSig 3)
 
@@ -118,3 +132,19 @@
 (check-error (n (list add1 number->string)))
 (check-error (n (list add1 string->number)))
 
+(define: vs : (Vectorof: String$)
+  (vector "0" "1" "2"))
+(check-expect vs (vector "0" "1" "2"))
+
+(define: (cvts [ns : (Listof: Number$)]) -> (Listof: String$)
+  (local [(define: cv : (Vectorof: (proc: ((Listof: String$) -> (Listof: String$))))
+            (vector (lambda (cs) (cons "0" cs))
+                    (lambda (cs) (cons "1" cs))))
+          (define (iter ns)
+            (if (empty? ns)
+                ns
+                ((vector-ref cv (first ns))
+                 (iter (rest ns)))))]
+    (iter ns)))
+(check-expect (cvts empty) empty)
+(check-expect (cvts (list 0 1 0 0)) (list "0" "1" "0" "0"))

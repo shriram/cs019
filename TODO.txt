@@ -3,7 +3,6 @@ MISSING LANGUAGE:
 - make all sig positions recognize (... -> ...) syntax
 - add unchecked versions of sig forms
 - add support for undefined and test against shared
-- add an Any$ signature
 - Vectorof:, Hashof:, ...
 
 ERROR MESSAGES:
@@ -29,7 +28,9 @@ DOCUMENTATION:
 
 NICETIES:
 
+- Test with debugger
 - Package with reader
+- Improve first-order Vectorof$ to not convert to list
 - quicker detection of use of HO sigs in or: and and:? BUT it cannot
   be so early as to eagerly evaluate the params, else we can't have
   forward references!

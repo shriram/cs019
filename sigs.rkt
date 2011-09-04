@@ -57,7 +57,7 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$ Any$ proc: pred->sig Listof:)
+(provide Number$ String$ Boolean$ Any$ proc: pred->sig Listof: Vectorof:)
 
 (define-struct signature (pred wrapper ho?))
 
@@ -79,6 +79,27 @@
                                      (object-name s))))
                         false))))
 
+(define (Vectorof: s)
+  (if (signature-ho? s)
+      (make-signature vector?
+                      (lambda (v)
+                        (list->vector
+                         (map (lambda (e) (wrap s e))
+                              (vector->list v))))
+                      true)
+      (let ([pred (lambda (v)
+                    (and (vector? v)
+                         (andmap (signature-pred s)
+                                 (vector->list v))))])
+        (make-signature pred
+                        (lambda (v)
+                          (if (pred v)
+                              v
+                              (error 'signature-violation "~s not a vector of ~a"
+                                     v
+                                     (object-name s))))
+                        false))))
+
 (define (first-order-sig pred?)
   (make-signature pred?
                   (lambda (v)
@@ -91,6 +112,7 @@
 
 (define Number$ (first-order-sig number?))
 (define String$ (first-order-sig string?))
+(define Boolean$ (first-order-sig (lambda (v) (or (eq? v true) (eq? v false)))))
 (define Any$ (first-order-sig (lambda (_) true)))
 
 (define (pred->sig p)
