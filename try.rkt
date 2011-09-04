@@ -8,6 +8,10 @@
 (check-expect (g 10) "x")
 (check-error (g "x"))
 
+(define: (unchk [x : Any$]) -> Number$ (add1 x))
+(check-expect (unchk 10) 11)
+(check-error (unchk "x"))
+
 (define: (f [x : Number$] [y : Number$]) -> Number$
   (+ x y))
 (check-expect (f 10 12) 22)

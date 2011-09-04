@@ -25,7 +25,7 @@
 (provide [all-from-out "sigs.rkt"])
 
 (require 2htdp/image 2htdp/universe)
-(provide [all-from-out 2htdp/universe] [all-from-out 2htdp/image])
+(provide [all-from-out 2htdp/image] [all-from-out 2htdp/universe])
 
 ; From Racket:
 (provide ;make-immutable-hash
@@ -35,7 +35,7 @@
 (provide provide all-defined-out all-from-out rename-out except-out 
                  prefix-out struct-out combine-out protect-out)
 
-(require test-engine/scheme-tests) ;; for run-tests and display-results
+(require [only-in test-engine/scheme-tests run-tests display-results])
 
 (define-syntax (top-level body-exprs)
   (syntax-case body-exprs ()

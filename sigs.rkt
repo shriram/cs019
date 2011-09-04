@@ -57,7 +57,7 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$ proc: pred->sig Listof:)
+(provide Number$ String$ Any$ proc: pred->sig Listof:)
 
 (define-struct signature (pred wrapper ho?))
 
@@ -91,6 +91,7 @@
 
 (define Number$ (first-order-sig number?))
 (define String$ (first-order-sig string?))
+(define Any$ (first-order-sig (lambda (_) true)))
 
 (define (pred->sig p)
   (first-order-sig p))
