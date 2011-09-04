@@ -12,10 +12,10 @@
   (+ x y))
 (check-expect (f 10 12) 22)
 
+(define Tree$ (or: mt$ nd$))
 (define-struct mt ())
 (define mt$ (pred->sig mt?))
-(define-struct nd (v l r))
-(define nd$ (pred->sig nd?))
+(define-struct: nd ([v : Number$] [l : Tree$] [r : Tree$]))
 
 (define: (a (t : mt$)) -> Number$
   (cond
@@ -24,6 +24,25 @@
 (check-expect (a (make-mt)) 0)
 (check-error (a (make-nd 1 2 3)))
 (check-error (a 3))
+
+(define: (tree-sum (t : Tree$)) -> Number$
+  (cond
+    [(mt? t) 0]
+    [(nd? t) (+ (nd-v t) (tree-sum (nd-l t)) (tree-sum (nd-r t)))]))
+(check-expect (tree-sum (make-nd 10 
+                                 (make-nd 5 (make-mt) (make-mt))
+                                 (make-nd 2 (make-nd 1 (make-mt) (make-mt)) (make-mt))))
+              18)
+(check-error (tree-sum (make-nd 10 
+                                (make-nd 5 (make-mt) (make-mt))
+                                (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt)))))
+
+;(define BadSig (or: (proc: (Number$ -> Number$)) Number$))
+;(define: bs : BadSig 3)
+
+(define VerySpecialNumber$ (and: Number$ (pred->sig positive?) (pred->sig even?)))
+(define: vsn : VerySpecialNumber$ 20)
+;(define: vsn2 : VerySpecialNumber$ 19)
 
 (define-struct: p ([x : Number$] [y : Number$]))
 (define: (h [p : p$]) -> Number$

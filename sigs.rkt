@@ -11,7 +11,7 @@
 
 (define-syntax (define-struct: stx)
   (syntax-case stx (:)
-    [(_ s ([f : C] ...))
+    [(_ s ([f : S] ...))
      (with-syntax ([(names ...) 
                     (build-struct-names #'s
                                         (syntax->list #'(f ...)) 
@@ -37,7 +37,7 @@
                    (let ([cnstr 
                           (lambda (f ...)
                             (let ([wrapped-args
-                                   (let loop ([sigs (list C ... )]
+                                   (let loop ([sigs (list S ... )]
                                               [args (list f ...)]
                                               [n 1])
                                      (if (empty? sigs)
@@ -52,7 +52,7 @@
              ;; thread, 2011-09-03, "splicing into local".  Should not
              ;; be necessary with next release.
              (define-values (sig-name) 
-               (first-order-sig pred (symbol->string 's))))))]))
+               (first-order-sig pred)))))]))
 
 (define (wrap sig val)
   ((signature-wrapper sig) val))
@@ -79,19 +79,21 @@
                                      (object-name s))))
                         false))))
 
-(define (first-order-sig pred? descr)
+(define (first-order-sig pred?)
   (make-signature pred?
                   (lambda (v)
                     (if (pred? v)
                         v
-                        (error 'signature-violation "~s is not a ~a" v descr)))
+                        (error 'signature-violation "~s is not a ~a" 
+                               v
+                               (object-name pred?))))
                   false))
 
-(define Number$ (first-order-sig number? "number"))
-(define String$ (first-order-sig string? "string"))
+(define Number$ (first-order-sig number?))
+(define String$ (first-order-sig string?))
 
 (define (pred->sig p)
-  (first-order-sig p (object-name p)))
+  (first-order-sig p))
 
 (define-syntax (proc: stx)
   (syntax-case stx (->)
@@ -108,38 +110,50 @@
 
 (define-syntax (define: stx)
   (syntax-case stx (: ->)
-    [(_ id : C exp)
+    [(_ id : S exp)
      (identifier? #'id)
-     #'(asl:define id (wrap C exp))]
-    [(_ (f [a : Ca] ...) -> Cr exp) 
-     #'(asl:define f (lambda: ([a : Ca] ...) -> Cr exp))]))
+     #'(asl:define id (wrap S exp))]
+    [(_ (f [a : Sa] ...) -> Sr exp) 
+     #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp))]))
 
 (define-syntax (lambda: stx)
   (syntax-case stx (: ->)
-    [(_ ([a : Ca] ...) -> Cr exp)
+    [(_ ([a : Sa] ...) -> Sr exp)
      #'(asl:lambda (a ...)
-         (let ([a (wrap Ca a)] ...)
-           (wrap Cr exp)))]))     
+                   (let ([a (wrap Sa a)] ...)
+                     (wrap Sr exp)))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
-    [(_ p ...)
-     #'(lambda (x)
-         (let loop ([preds (list p ...)])
-           (if (empty? preds)
-               false
-               (or ((first preds) x)
-                   (loop (rest preds))))))]))
+    [(_ S ...)
+     #'(first-order-sig
+        (lambda (x)
+          (let loop ([sigs (list S ...)])
+            (if (empty? sigs)
+                false
+                (let ([s (first sigs)])
+                  (if (signature-ho? s)
+                      (error 'signature-violation 
+                             "or: cannot combine higher-order signatures such as ~s" 
+                             (object-name s))
+                      (or ((signature-pred s) x)
+                          (loop (rest sigs)))))))))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
-    [(_ p ...)
-     #'(lambda (x)
-         (let loop ([preds (list p ...)])
-           (if (empty? preds)
-               true
-               (and ((first preds) x)
-                    (loop (rest preds))))))]))
+    [(_ S ...)
+     #'(first-order-sig
+        (lambda (x)
+          (let loop ([sigs (list S ...)])
+            (if (empty? sigs)
+                true
+                (let ([s (first sigs)])
+                  (if (signature-ho? s)
+                      (error 'signature-violation 
+                             "or: cannot combine higher-order signatures such as ~s" 
+                             (object-name s))
+                      (and ((signature-pred s) x)
+                           (loop (rest sigs)))))))))]))
 
 (define (not: p)
   (lambda (x) (not (p x))))
@@ -151,10 +165,10 @@
 
 (define-syntax (defvar: stx)
   (syntax-parse stx #:literals(:)
-    [(_ i:id : C:expr b:expr)
+    [(_ i:id : S:expr b:expr)
      #'(asl:define i
          (let ([e b])
-           (if (C e)
+           (if (S e)
                e
-               (error 'signature "violation of ~a" C))))]))
+               (error 'signature "violation of ~a" S))))]))
 |#
