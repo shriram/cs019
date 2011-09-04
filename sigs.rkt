@@ -82,11 +82,11 @@
           true))]))
 
 (define-syntax (define: stx)
-  (syntax-case stx (:)
+  (syntax-case stx (: ->)
     [(_ id : C exp)
      (identifier? #'id)
      #'(asl:define id (wrap C exp))]
-    [(_ (f [a : Ca] ...) : Cr exp) 
+    [(_ (f [a : Ca] ...) -> Cr exp) 
      #'(asl:define (f a ...)
                    (let ([a (wrap Ca a)] ...)
                      (wrap Cr exp)))]))
