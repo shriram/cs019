@@ -57,9 +57,27 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$ proc$ pred->sig)
+(provide Number$ String$ proc: pred->sig Listof:)
 
 (define-struct signature (pred wrapper ho?))
+
+(define (Listof: s)
+  (if (signature-ho? s)
+      (make-signature list?
+                      (lambda (v)
+                        (map (lambda (e) (wrap s e)) v))
+                      true)
+      (let ([pred (lambda (v)
+                    (and (list? v)
+                         (andmap (signature-pred s) v)))])
+        (make-signature pred
+                        (lambda (v)
+                          (if (pred v)
+                              v
+                              (error 'signature-violation "~s not a list of ~a"
+                                     v
+                                     (object-name s))))
+                        false))))
 
 (define (first-order-sig pred? descr)
   (make-signature pred?
@@ -75,7 +93,7 @@
 (define (pred->sig p)
   (first-order-sig p (object-name p)))
 
-(define-syntax (proc$ stx)
+(define-syntax (proc: stx)
   (syntax-case stx (->)
     [(_ (a ... -> r))
      (with-syntax ([(args ...) (generate-temporaries #'(a ...))])
