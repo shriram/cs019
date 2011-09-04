@@ -7,7 +7,7 @@
 (require [for-syntax racket])
 (require racket/bool racket/list)
 
-(provide define: define-struct: and: or: not:)
+(provide define: lambda: define-struct: and: or: not:)
 
 (define-syntax (define-struct: stx)
   (syntax-case stx (:)
@@ -112,9 +112,14 @@
      (identifier? #'id)
      #'(asl:define id (wrap C exp))]
     [(_ (f [a : Ca] ...) -> Cr exp) 
-     #'(asl:define (f a ...)
-                   (let ([a (wrap Ca a)] ...)
-                     (wrap Cr exp)))]))
+     #'(asl:define f (lambda: ([a : Ca] ...) -> Cr exp))]))
+
+(define-syntax (lambda: stx)
+  (syntax-case stx (: ->)
+    [(_ ([a : Ca] ...) -> Cr exp)
+     #'(asl:lambda (a ...)
+         (let ([a (wrap Ca a)] ...)
+           (wrap Cr exp)))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()

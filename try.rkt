@@ -55,10 +55,10 @@
 
 (define: (d/dx [f : (proc: (Number$ -> Number$))]) -> (proc: (Number$ -> Number$))
   (local [(define: dx : Number$ 0.0001)]
-    (lambda (x)
+    (lambda: ([x : Number$]) -> Number$
       (/ (- (f (+ x dx)) (f x))
          dx))))
-(check-within ((d/dx (lambda (x) (* x x))) 10) 19 21)
+(check-within ((d/dx (lambda: ([x : Number$]) -> Number$ (* x x))) 10) 19 21)
 (check-error ((d/dx number->string) 10))
 
 (check-expect (local ([define: x : Number$ 3]) x) 3)
