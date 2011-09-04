@@ -1,10 +1,16 @@
-#lang racket
+#lang racket/base
 
+(require [for-syntax racket/base])
 (require racket/provide) ;; to get provide's filtered-out
-(require (prefix-in asl: 
-                    (except-in lang/htdp-advanced 
-                               image? require #%module-begin
-                               : -> Number String)))
+(require
+ (prefix-in 
+  asl: 
+  (except-in lang/htdp-advanced 
+             image? require #%module-begin
+             signature : Number Real Rational Integer Natural
+             Boolean True False String Empty-list Any Property 
+             predicate one-of mixed -> combined Symbol ; list-of
+             for-all expect expect-within expect-member-of expect-range ==>)))
 (require (only-in lang/htdp-advanced (#%module-begin asl:module-begin)))
 (provide (filtered-out (lambda (name)
                          (and (regexp-match #rx"^asl:" name)
