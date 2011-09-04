@@ -1,6 +1,6 @@
 MISSING LANGUAGE:
 
-- make all sig positions recognize (... -> ...) syntax
+- check for signatureness in sig positions
 - add unchecked versions of sig forms
 - add support for undefined and test against shared
 - Hashof:, ...
@@ -29,8 +29,9 @@ DOCUMENTATION:
 
 NICETIES:
 
+- Indentation levels for define:, lambda:, etc.
 - Test with debugger
-- Package with reader
+- Turn into a planet package
 - Improve first-order Vectorof$ to not convert to list
 - Remove redundancies in sigs.rkt
 - Scribble docs

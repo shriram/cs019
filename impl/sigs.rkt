@@ -7,21 +7,33 @@
 (require [for-syntax racket])
 (require racket/bool racket/list)
 
-(provide define: lambda: define-struct: and: or: not:)
+(provide define: lambda: define-struct: and: or: not: proc:)
+
+(define-for-syntax (parse-sig stx)
+  (syntax-case stx (->)
+    [(A ... -> R)
+     (with-syntax ([(A ...) (map parse-sig (syntax->list #'(A ...)))]
+                   [R (parse-sig #'R)])
+       #'(proc: (A ... -> R)))]
+    [_ stx]))
+
+(define-for-syntax (parse-sigs stxs)
+  (map parse-sig (syntax->list stxs)))
 
 (define-syntax (define-struct: stx)
   (syntax-case stx (:)
-    [(_ s ([f : S] ...))
+    [(_ sn ([f : S] ...))
      (with-syntax ([(names ...) 
-                    (build-struct-names #'s
+                    (build-struct-names #'sn
                                         (syntax->list #'(f ...)) 
                                         #f #f)]
-                   [orig stx])
-       (with-syntax ([sig-name (datum->syntax #'s
+                   [orig stx]
+                   [(S ...) (parse-sigs #'(S ...))])
+       (with-syntax ([sig-name (datum->syntax #'sn
                                               (string->symbol
                                                (string-append
                                                 (symbol->string
-                                                 (syntax->datum #'s))
+                                                 (syntax->datum #'sn))
                                                 "$")))]
                      [cnstr (syntax-case #'(names ...) ()
                               [(struct:name-id constructor misc ...)
@@ -33,7 +45,7 @@
              (define-values (names ...)
                (let ()
                  (begin
-                   (define-struct s (f ...) #:transparent #:mutable)
+                   (define-struct sn (f ...) #:transparent #:mutable)
                    (let ([cnstr 
                           (lambda (f ...)
                             (let ([wrapped-args
@@ -57,11 +69,17 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$ Boolean$ Any$ proc: pred->sig Listof: Vectorof:)
+(provide Number$ String$ Boolean$ Any$ pred->sig Listof: Vectorof:)
 
 (define-struct signature (pred wrapper ho?))
 
-(define (Listof: s)
+(define-syntax (Listof: stx)
+  (syntax-case stx ()
+    [(_ S)
+     (with-syntax ([S (parse-sig #'S)])
+       #'(make-listof-sig S))]))
+
+(define (make-listof-sig s) ;; s has already been parsed
   (if (signature-ho? s)
       (make-signature list?
                       (lambda (v)
@@ -79,7 +97,13 @@
                                      (object-name s))))
                         false))))
 
-(define (Vectorof: s)
+(define-syntax (Vectorof: stx)
+  (syntax-case stx ()
+    [(_ S)
+     (with-syntax ([S (parse-sig #'S)])
+       #'(make-vectorof-sig S))]))
+
+(define (make-vectorof-sig s)  ;; s has already been parsed
   (if (signature-ho? s)
       (make-signature vector?
                       (lambda (v)
@@ -118,16 +142,23 @@
 (define (pred->sig p)
   (first-order-sig p))
 
+;; proc: can be used liberally, but it is intended only for users to be able
+;; to define stand-alone procedural signatures: eg,
+;; (define n->n (proc: (Number$ -> Number$)))
+;; In all other cases, the macros invoke parse-sig, which takes care of
+;; automatically wrapping (proc: ...) around procedure signatures.
 (define-syntax (proc: stx)
   (syntax-case stx (->)
-    [(_ (a ... -> r))
-     (with-syntax ([(args ...) (generate-temporaries #'(a ...))])
+    [(_ (A ... -> R))
+     (with-syntax ([(args ...) (generate-temporaries #'(A ...))]
+                   [(A ...) (parse-sigs #'(A ...))]
+                   [R (parse-sig #'R)])
        #'(make-signature
           procedure?
           (lambda (v)
             (if (procedure? v)
                 (lambda (args ...)
-                  (wrap r (v (wrap a args) ...)))
+                  (wrap R (v (wrap A args) ...)))
                 (error 'signature-violation "~s is not a procedure" v)))
           true))]))
 
@@ -135,50 +166,63 @@
   (syntax-case stx (: ->)
     [(_ id : S exp)
      (identifier? #'id)
-     #'(asl:define id (wrap S exp))]
-    [(_ (f [a : Sa] ...) -> Sr exp) 
-     #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp))]))
+     (with-syntax ([S (parse-sig #'S)])
+       #'(asl:define id (wrap S exp)))]
+    [(_ (f [a : Sa] ...) -> Sr exp)
+     (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
+                   [Sr (parse-sig #'Sr)])
+       #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp)))]))
 
 (define-syntax (lambda: stx)
   (syntax-case stx (: ->)
     [(_ ([a : Sa] ...) -> Sr exp)
-     #'(asl:lambda (a ...)
-                   (let ([a (wrap Sa a)] ...)
-                     (wrap Sr exp)))]))     
+     (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
+                   [Sr (parse-sig #'Sr)])
+       #'(asl:lambda (a ...)
+                     (let ([a (wrap Sa a)] ...)
+                       (wrap Sr exp))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
     [(_ S ...)
-     #'(first-order-sig
-        (lambda (x)
-          (let loop ([sigs (list S ...)])
-            (if (empty? sigs)
-                false
-                (let ([s (first sigs)])
-                  (if (signature-ho? s)
-                      (error 'signature-violation 
-                             "or: cannot combine higher-order signatures such as ~s" 
-                             (object-name s))
-                      (or ((signature-pred s) x)
-                          (loop (rest sigs)))))))))]))
+     (with-syntax ([(S ...) (parse-sigs #'(S ...))])
+       #'(first-order-sig
+          (lambda (x)
+            (let loop ([sigs (list S ...)])
+              (if (empty? sigs)
+                  false
+                  (let ([s (first sigs)])
+                    (if (signature-ho? s)
+                        (error 'signature-violation 
+                               "or: cannot combine higher-order signatures such as ~s" 
+                               (object-name s))
+                        (or ((signature-pred s) x)
+                            (loop (rest sigs))))))))))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
     [(_ S ...)
-     #'(first-order-sig
-        (lambda (x)
-          (let loop ([sigs (list S ...)])
-            (if (empty? sigs)
-                true
-                (let ([s (first sigs)])
-                  (if (signature-ho? s)
-                      (error 'signature-violation 
-                             "or: cannot combine higher-order signatures such as ~s" 
-                             (object-name s))
-                      (and ((signature-pred s) x)
-                           (loop (rest sigs)))))))))]))
+     (with-syntax ([(S ...) (parse-sigs #'(S ...))])
+       #'(first-order-sig
+          (lambda (x)
+            (let loop ([sigs (list S ...)])
+              (if (empty? sigs)
+                  true
+                  (let ([s (first sigs)])
+                    (if (signature-ho? s)
+                        (error 'signature-violation 
+                               "or: cannot combine higher-order signatures such as ~s" 
+                               (object-name s))
+                        (and ((signature-pred s) x)
+                             (loop (rest sigs))))))))))]))
 
-(define (not: s)
+(define-syntax (not: stx)
+  (syntax-case stx ()
+    [(_ S)
+     (with-syntax ([S (parse-sig #'S)])
+       #'(make-not-sig S))]))
+
+(define (make-not-sig s)  ;; s is already parsed
   (if (signature-ho? s)
       (error 'signature-violation
              "not: cannot negate higher-order signatures such as ~s"
