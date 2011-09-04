@@ -1,10 +1,11 @@
-#lang racket
+#lang racket/base
 
 (require (only-in lang/htdp-advanced [define asl:define] [lambda asl:lambda]))
 (require [for-syntax syntax/parse]
          [for-syntax syntax/struct])
 (require syntax/struct)
 (require [for-syntax racket])
+(require racket/bool racket/list)
 
 (provide define: define-struct: and: or: not:)
 
@@ -52,7 +53,7 @@
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$)
+(provide Number$ String$ proc$)
 
 (define-struct signature (pred wrapper ho?))
 
@@ -66,6 +67,19 @@
 
 (define Number$ (first-order-sig number? "number"))
 (define String$ (first-order-sig string? "string"))
+
+(define-syntax (proc$ stx)
+  (syntax-case stx (->)
+    [(_ (a ... -> r))
+     (with-syntax ([(args ...) (generate-temporaries #'(a ...))])
+       #'(make-signature
+          procedure?
+          (lambda (v)
+            (if (procedure? v)
+                (lambda (args ...)
+                  (wrap r (v (wrap a args) ...)))
+                (error 'signature-violation "~s is not a procedure" v)))
+          true))]))
 
 (define-syntax (define: stx)
   (syntax-case stx (:)
