@@ -13,12 +13,17 @@
 (check-expect (f 10 12) 22)
 
 (define-struct mt ())
+(define mt$ (pred->sig mt?))
 (define-struct nd (v l r))
+(define nd$ (pred->sig nd?))
 
-#;(define: (tf (t : (or: mt? nd?))) -> Number$
+(define: (a (t : mt$)) -> Number$
   (cond
     [(mt? t) 0]
     [(nd? t) 1]))
+(check-expect (a (make-mt)) 0)
+(check-error (a (make-nd 1 2 3)))
+(check-error (a 3))
 
 ;(defvar: y : number? 4)
 (define-struct: p ([x : Number$] [y : Number$]))
@@ -48,3 +53,25 @@
                    (string->number (string-append s1 s2 s3))))
               123456)
 (check-error (j string-append))
+
+(check-expect (local ([define: x : Number$ 3]) x) 3)
+(check-error (local ([define: x : String$ 3]) x))
+
+(check-expect (local ([define: (f [x : Number$]) -> String$
+                        (number->string x)])
+                (f 10))
+              "10")
+(check-expect (local ([define: (f [p : (proc$ (Number$ -> String$))]) -> String$
+                        (p 10)])
+                (f number->string))
+              "10")
+(check-error (local ([define: (f [x : Number$]) -> String$
+                        (number->string x)])
+                (f "10")))
+
+(check-expect (local ([define-struct: m ([v : Number$] [w : String$])])
+                (m-v (make-m 5 "x")))
+              5)
+(check-error (local ([define-struct: m ([v : Number$] [w : String$])])
+               (m-v (make-m "x" 5))))
+

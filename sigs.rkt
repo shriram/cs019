@@ -47,13 +47,17 @@
                                                (loop (rest sigs) (rest args) (add1 n)))))])
                               (apply cnstr wrapped-args)))])
                      (values names ...)))))
-             (define sig-name (first-order-sig pred 
-                                               (symbol->string 's))))))]))
+             ;; This could be a define below, but it's a define-values
+             ;; due to a bug in ISL's local.  See users@racket-lang.org
+             ;; thread, 2011-09-03, "splicing into local".  Should not
+             ;; be necessary with next release.
+             (define-values (sig-name) 
+               (first-order-sig pred (symbol->string 's))))))]))
 
 (define (wrap sig val)
   ((signature-wrapper sig) val))
 
-(provide Number$ String$ proc$)
+(provide Number$ String$ proc$ pred->sig)
 
 (define-struct signature (pred wrapper ho?))
 
@@ -67,6 +71,9 @@
 
 (define Number$ (first-order-sig number? "number"))
 (define String$ (first-order-sig string? "string"))
+
+(define (pred->sig p)
+  (first-order-sig p (object-name p)))
 
 (define-syntax (proc$ stx)
   (syntax-case stx (->)

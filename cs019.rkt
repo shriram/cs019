@@ -3,8 +3,8 @@
 (require racket/provide) ;; to get provide's filtered-out
 (require (prefix-in asl: 
                     (except-in lang/htdp-advanced 
-                               : image? require #%module-begin
-                               ->)))
+                               image? require #%module-begin
+                               : -> Number String)))
 (require (only-in lang/htdp-advanced (#%module-begin asl:module-begin)))
 (provide (filtered-out (lambda (name)
                          (and (regexp-match #rx"^asl:" name)
