@@ -1,0 +1,36 @@
+- eliminate DMdA bindings from namespace
+
+- get define-struct inside local to work
+
+- make all sig positions recognize (... -> ...) syntax
+
+- add unchecked versions of sig forms
+
+- add support for undefined and test against shared
+
+- error messages don't seem to use the right printer: eg,
+  (define: s2n : (proc$ (String$ ->> Number$)) string->number)
+  > (s2n "x")
+  . . sigs.rkt:64:24: signature-violation: #f is not a number
+  (prints #f instead of false)
+and worse,
+  (tree-sum (make-nd 10 (make-nd 5 (make-mt) (make-mt))
+                        (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt))))
+  . . sigs.rkt:87:24: signature-violation: 10 is not a #f
+  (prints #f instead of a useful name)
+
+- documentation
+  - pred->sig expects flag predicates
+  - need to change printer to constructor
+
+- quicker detection of use of HO sigs in or: and and:? BUT it cannot
+be so early as to eagerly evaluate the params, else we can't have
+forward references!
+
+- Package with reader
+
+- Vectorof:, Hashof:, ...
+
+- better error source reporting
+
+- better description names for signatures
