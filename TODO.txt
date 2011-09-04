@@ -3,7 +3,8 @@ MISSING LANGUAGE:
 - make all sig positions recognize (... -> ...) syntax
 - add unchecked versions of sig forms
 - add support for undefined and test against shared
-- Vectorof:, Hashof:, ...
+- Hashof:, ...
+- test against last year's code
 
 ERROR MESSAGES:
 
@@ -25,13 +26,14 @@ DOCUMENTATION:
 - need to change printer to constructor
 - you can set your default #lang in the menu
 - pred->sig, or:, and:, not: expect flat predicates
-- Scribble docs
 
 NICETIES:
 
 - Test with debugger
 - Package with reader
 - Improve first-order Vectorof$ to not convert to list
+- Remove redundancies in sigs.rkt
+- Scribble docs
 - quicker detection of use of HO sigs in or: and and:? BUT it cannot
   be so early as to eagerly evaluate the params, else we can't have
   forward references!

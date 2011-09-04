@@ -18,11 +18,11 @@
                        (all-from-out lang/htdp-advanced)))
 (provide (rename-out (top-level #%module-begin)))
 
-(require "open-image-url.rkt")
+(require "impl/open-image-url.rkt")
 (provide open-image-url)
 
-(require "sigs.rkt")
-(provide [all-from-out "sigs.rkt"])
+(require "impl/sigs.rkt")
+(provide [all-from-out "impl/sigs.rkt"])
 
 (require 2htdp/image 2htdp/universe)
 (provide [all-from-out 2htdp/image] [all-from-out 2htdp/universe])
