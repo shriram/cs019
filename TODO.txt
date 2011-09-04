@@ -1,11 +1,15 @@
-- eliminate DMdA bindings from namespace
+MISSING LANGUAGE:
 
 - make all sig positions recognize (... -> ...) syntax
-
 - add unchecked versions of sig forms
-
 - add support for undefined and test against shared
+- add an Any$ signature
+- Vectorof:, Hashof:, ...
 
+ERROR MESSAGES:
+
+- better error source reporting
+- better description names for signatures
 - error messages don't seem to use the right printer: eg,
   (define: s2n : (proc$ (String$ ->> Number$)) string->number)
   > (s2n "x")
@@ -17,20 +21,19 @@ and worse,
   . . sigs.rkt:87:24: signature-violation: 10 is not a #f
   (prints #f instead of a useful name)
 
-- documentation
-  - need to change printer to constructor
-  - pred->sig, or:, and:, not: expect flat predicates
+DOCUMENTATION:
 
-- quicker detection of use of HO sigs in or: and and:? BUT it cannot
-be so early as to eagerly evaluate the params, else we can't have
-forward references!
+- need to change printer to constructor
+- pred->sig, or:, and:, not: expect flat predicates
+- Scribble docs
 
-- add an Any$ signature
+NICETIES:
 
 - Package with reader
+- quicker detection of use of HO sigs in or: and and:? BUT it cannot
+  be so early as to eagerly evaluate the params, else we can't have
+  forward references!
 
-- Vectorof:, Hashof:, ...
+MISCELLANEOUS:
 
-- better error source reporting
-
-- better description names for signatures
+- DMdA: where did list-of go?
