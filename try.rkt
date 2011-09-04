@@ -37,12 +37,15 @@
                                 (make-nd 5 (make-mt) (make-mt))
                                 (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt)))))
 
-;(define BadSig (or: (proc: (Number$ -> Number$)) Number$))
+(define BadSig$ (or: (proc: (Number$ -> Number$)) Number$))
 ;(define: bs : BadSig 3)
 
 (define VerySpecialNumber$ (and: Number$ (pred->sig positive?) (pred->sig even?)))
 (define: vsn : VerySpecialNumber$ 20)
+(check-expect vsn 20)
 ;(define: vsn2 : VerySpecialNumber$ 19)
+(define: nvsn : (not: VerySpecialNumber$) 19)
+(check-expect nvsn 19)
 
 (define-struct: p ([x : Number$] [y : Number$]))
 (define: (h [p : p$]) -> Number$

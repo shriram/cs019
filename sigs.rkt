@@ -155,8 +155,12 @@
                       (and ((signature-pred s) x)
                            (loop (rest sigs)))))))))]))
 
-(define (not: p)
-  (lambda (x) (not (p x))))
+(define (not: s)
+  (if (signature-ho? s)
+      (error 'signature-violation
+             "not: cannot negate higher-order signatures such as ~s"
+             (object-name s))
+      (first-order-sig (lambda (x) (not ((signature-pred s) x))))))
 
 #|
 (provide : defvar:)
