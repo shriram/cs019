@@ -36,6 +36,8 @@
 (define mt$ (pred->sig mt?))
 (define-struct: nd ([v : Number$] [l : Tree$] [r : Tree$]))
 
+(check-error (set-nd-v! (make-nd 0 (make-mt) (make-mt)) "x"))
+(check-error (set-nd-l! (make-nd 0 (make-mt) (make-mt)) "x"))
 (check-expect (let ([n (make-nd 0 (make-mt) (make-mt))])
                 (begin
                   (set-nd-v! n 5)
