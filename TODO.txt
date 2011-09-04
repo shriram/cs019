@@ -1,7 +1,5 @@
 - eliminate DMdA bindings from namespace
 
-- get define-struct inside local to work
-
 - make all sig positions recognize (... -> ...) syntax
 
 - add unchecked versions of sig forms
@@ -20,12 +18,14 @@ and worse,
   (prints #f instead of a useful name)
 
 - documentation
-  - pred->sig expects flag predicates
   - need to change printer to constructor
+  - pred->sig, or:, and:, not: expect flat predicates
 
 - quicker detection of use of HO sigs in or: and and:? BUT it cannot
 be so early as to eagerly evaluate the params, else we can't have
 forward references!
+
+- add an Any$ signature
 
 - Package with reader
 
