@@ -23,6 +23,7 @@ and worse,
 DOCUMENTATION:
 
 - need to change printer to constructor
+- you can set your default #lang in the menu
 - pred->sig, or:, and:, not: expect flat predicates
 - Scribble docs
 

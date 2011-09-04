@@ -1,4 +1,4 @@
-#lang s-exp "cs019.rkt"
+#lang s-exp "../cs019.rkt"
 
 (define: x : Number$ 3)
 ;(define: y : string? 4)
