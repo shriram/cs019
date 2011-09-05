@@ -7,7 +7,7 @@
 (require [for-syntax racket])
 (require racket/bool racket/list)
 
-(provide define: lambda: define-struct: and: or: not: proc:)
+(provide define: lambda: define-struct: and: or: not:)
 
 (define-for-syntax (parse-sig stx)
   (syntax-case stx (->)
@@ -27,7 +27,7 @@
                     (build-struct-names #'sn
                                         (syntax->list #'(f ...)) 
                                         #f #f)]
-                   [orig stx]
+                   [term stx]
                    [(S ...) (parse-sigs #'(S ...))])
        (with-syntax ([sig-name (datum->syntax #'sn
                                               (string->symbol
@@ -77,37 +77,35 @@
              ;; thread, 2011-09-03, "splicing into local".  Should not
              ;; be necessary with next release.
              (define-values (sig-name) 
-               (first-order-sig pred)))))]))
+               (first-order-sig pred #'term)))))]))
 
 (define (not-sig-error src)
   (raise-syntax-error 'signature-violation "not a valid signature" src))
 
-(define wrap
-  (case-lambda
-    [(sig val)
-     (wrap sig val sig)]
-    [(sig val src)
-     (if (signature? sig)
-         ((signature-wrapper sig) val)
-         (not-sig-error src))]))
+(define (wrap sig val src)
+  (if (signature? sig)
+      ((signature-wrapper sig) val)
+      (not-sig-error src)))
 
-(provide Number$ String$ Boolean$ Any$ pred->sig Listof: Vectorof:)
+(provide Number$ String$ Boolean$ Any$ Sig: Listof: Vectorof:)
 
-(define-struct signature (pred wrapper ho?))
+(define-struct signature (pred wrapper ho? src))
 
 (define-syntax (Listof: stx)
   (syntax-case stx ()
     [(_ S)
-     (with-syntax ([S (parse-sig #'S)])
-       #'(make-listof-sig S #'S))]))
+     (with-syntax ([S (parse-sig #'S)]
+                   [term stx])
+       #'(make-listof-sig S #'S #'term))]))
 
-(define (make-listof-sig s sig-src) ;; s has already been parsed
+(define (make-listof-sig s sig-src term-src) ;; s has already been parsed
   (if (signature? s)
       (if (signature-ho? s)
           (make-signature list?
                           (lambda (v)
                             (map (lambda (e) (wrap s e sig-src)) v))
-                          true)
+                          true
+                          term-src)
           (let ([pred (lambda (v)
                         (and (list? v)
                              (andmap (signature-pred s) v)))])
@@ -118,16 +116,18 @@
                                   (error 'signature-violation "~s not a list of ~a"
                                          v
                                          (object-name s))))
-                            false)))
+                            false
+                            term-src)))
       (not-sig-error sig-src)))
 
 (define-syntax (Vectorof: stx)
   (syntax-case stx ()
     [(_ S)
-     (with-syntax ([S (parse-sig #'S)])
-       #'(make-vectorof-sig S #'S))]))
+     (with-syntax ([S (parse-sig #'S)]
+                   [term stx])
+       #'(make-vectorof-sig S #'S #'term))]))
 
-(define (make-vectorof-sig s sig-src)  ;; s has already been parsed
+(define (make-vectorof-sig s sig-src term-src) ;; s has already been parsed
   (if (signature? s)
       (if (signature-ho? s)
           (make-signature vector?
@@ -135,7 +135,8 @@
                             (list->vector
                              (map (lambda (e) (wrap s e sig-src))
                                   (vector->list v))))
-                          true)
+                          true
+                          term-src)
           (let ([pred (lambda (v)
                         (and (vector? v)
                              (andmap (signature-pred s)
@@ -147,10 +148,11 @@
                                   (error 'signature-violation "~s not a vector of ~a"
                                          v
                                          (object-name s))))
-                            false)))
+                            false
+                            term-src)))
       (not-sig-error sig-src)))
 
-(define (first-order-sig pred?)
+(define (first-order-sig pred? term-src)
   (make-signature pred?
                   (lambda (v)
                     (if (pred? v)
@@ -158,19 +160,37 @@
                         (error 'signature-violation "~s is not a ~a" 
                                v
                                (object-name pred?))))
-                  false))
+                  false
+                  term-src))
 
-(define Number$ (first-order-sig number?))
-(define String$ (first-order-sig string?))
-(define Boolean$ (first-order-sig (lambda (v) (or (eq? v true) (eq? v false)))))
-(define Any$ (first-order-sig (lambda (_) true)))
+(define-syntax (Sig: stx)
+  (syntax-case stx ()
+    [(_ S)
+     (with-syntax ([Sp (parse-sig #'S)]
+                   [term stx])
+       (if (eq? #'Sp #'S) ;; currently means S is (... -> ...)
+           #'(first-order-sig S #'term)
+           #'Sp))]))
 
-(define (pred->sig p)
-  (first-order-sig p))
+(define-syntax Number$
+  (syntax-id-rules ()
+    [_ (Sig: number?)]))
 
-;; proc: can be used liberally, but it is intended only for users to be able
-;; to define stand-alone procedural signatures: eg,
-;; (define n->n (proc: (Number$ -> Number$)))
+(define-syntax String$
+  (syntax-id-rules ()
+    [_ (Sig: string?)]))
+
+(define-syntax Boolean$
+  (syntax-id-rules ()
+    [_ (Sig: boolean?)]))
+
+(define-syntax Any$
+  (syntax-id-rules ()
+    [_ (Sig: (lambda (_) true))]))
+
+;; proc: is for internal use only.
+;; Stand-alone procedural signatures are defined using Sig:; e.g.,
+;; (define n->n (Sig: (Number$ -> Number$)))
 ;; In all other cases, the macros invoke parse-sig, which takes care of
 ;; automatically wrapping (proc: ...) around procedure signatures.
 (define-syntax (proc: stx)
@@ -178,7 +198,8 @@
     [(_ (A ... -> R))
      (with-syntax ([(args ...) (generate-temporaries #'(A ...))]
                    [(A ...) (parse-sigs #'(A ...))]
-                   [R (parse-sig #'R)])
+                   [R (parse-sig #'R)]
+                   [term stx])
        #'(make-signature
           procedure?
           (lambda (v)
@@ -186,7 +207,8 @@
                 (lambda (args ...)
                   (wrap R (v (wrap A args #'A) ...) #'R))
                 (error 'signature-violation "~s is not a procedure" v)))
-          true))]))
+          true
+          #'term))]))
 
 (define-syntax (define: stx)
   (syntax-case stx (: ->)
@@ -211,7 +233,8 @@
 (define-syntax (or: stx)
   (syntax-case stx ()
     [(_ S ...)
-     (with-syntax ([(S ...) (parse-sigs #'(S ...))])
+     (with-syntax ([(S ...) (parse-sigs #'(S ...))]
+                   [term stx])
        #'(first-order-sig
           (lambda (x)
             (let loop ([sigs (list S ...)]
@@ -226,12 +249,14 @@
                                    (object-name s))
                             (or ((signature-pred s) x)
                                 (loop (rest sigs) (rest sig-srcs))))
-                        (not-sig-error (first sig-srcs)))))))))]))
+                        (not-sig-error (first sig-srcs)))))))
+          #'term))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
     [(_ S ...)
-     (with-syntax ([(S ...) (parse-sigs #'(S ...))])
+     (with-syntax ([(S ...) (parse-sigs #'(S ...))]
+                   [term stx])
        #'(first-order-sig
           (lambda (x)
             (let loop ([sigs (list S ...)]
@@ -246,21 +271,23 @@
                                    (object-name s))
                             (and ((signature-pred s) x)
                                  (loop (rest sigs) (rest sig-srcs))))
-                        (not-sig-error (first sig-srcs)))))))))]))
+                        (not-sig-error (first sig-srcs)))))))
+          #'term))]))
 
 (define-syntax (not: stx)
   (syntax-case stx ()
     [(_ S)
-     (with-syntax ([S (parse-sig #'S)])
-       #'(make-not-sig S #'S))]))
+     (with-syntax ([S (parse-sig #'S)]
+                   [term stx])
+       #'(make-not-sig S #'S #'term))]))
 
-(define (make-not-sig s sig-src)  ;; s is already parsed
+(define (make-not-sig s sig-src term-src)  ;; s is already parsed
   (if (signature? s)
       (if (signature-ho? s)
           (error 'signature-violation
                  "not: cannot negate higher-order signatures such as ~s"
                  (object-name s))
-          (first-order-sig (lambda (x) (not ((signature-pred s) x)))))
+          (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-src))
       (not-sig-error sig-src)))
 
 #|

@@ -1,11 +1,9 @@
 MISSING LANGUAGE:
 
-- check for signatureness in sig positions
 - add unchecked versions of sig forms
 - add support for undefined and test against shared
 - Hashof:, ...
 - test against last year's code
-- replace proc: w/ sig: form
 - add parameterized signatures (esp for structs)
 
 ERROR MESSAGES:

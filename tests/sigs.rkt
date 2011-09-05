@@ -33,7 +33,7 @@
 
 (define Tree$ (or: mt$ nd$))
 (define-struct mt ())
-(define mt$ (pred->sig mt?))
+(define mt$ (Sig: mt?))
 (define-struct: nd ([v : Number$] [l : Tree$] [r : Tree$]))
 
 (check-error (set-nd-v! (make-nd 0 (make-mt) (make-mt)) "x"))
@@ -65,7 +65,7 @@
                                 (make-nd 5 (make-mt) (make-mt))
                                 (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt)))))
 
-(define: (prime? [n : (pred->sig (lambda (n) (and (positive? n) (integer? n))))]) 
+(define: (prime? [n : (Sig: (lambda (n) (and (positive? n) (integer? n))))]) 
   -> Boolean$
   (local ([define (check k)
             (if (>= k n)
@@ -83,7 +83,7 @@
 ;(define: bs : BadSig 3)
 ;(define BadSig2 (not: (Number$ -> Number$)))
 
-(define VerySpecialNumber$ (and: Number$ (pred->sig positive?) (pred->sig even?)))
+(define VerySpecialNumber$ (and: Number$ (Sig: positive?) (Sig: even?)))
 (define: vsn : VerySpecialNumber$ 20)
 (check-expect vsn 20)
 ;(define: vsn2 : VerySpecialNumber$ 19)
@@ -96,12 +96,10 @@
 (check-expect (h (make-p 1 2)) 1)
 (check-expect (h (make-p 3 4)) 3)
 
-(define n->n (proc: (Number$ -> Number$)))
+(define n->n (Sig: (Number$ -> Number$)))
 (define: a1 : n->n add1)
 (check-expect (a1 5) 6)
 (check-error (a1 "x"))
-
-;(define JunkSig (proc: Number$))
 
 (define: a2 : (Number$ -> Number$) add1)
 (check-expect (a2 5) 6)
