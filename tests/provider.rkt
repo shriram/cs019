@@ -7,3 +7,5 @@
 (define ht2 (hash-set ht "x" 10))
 
 (define-struct: h ([p : Number$] [q : String$]))
+
+(define: only-positive-add1 : ((Sig: positive?) -> Number$) add1)
