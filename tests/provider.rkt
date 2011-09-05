@@ -5,3 +5,5 @@
 (define-struct g (a b))
 (define ht (hash))
 (define ht2 (hash-set ht "x" 10))
+
+(define-struct: h ([p : Number$] [q : String$]))

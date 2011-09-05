@@ -5,6 +5,7 @@ MISSING LANGUAGE:
 - add support for undefined and test against shared
 - Hashof:, ...
 - test against last year's code
+- replace proc: w/ sig: form
 
 ERROR MESSAGES:
 
