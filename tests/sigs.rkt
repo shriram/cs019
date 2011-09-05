@@ -27,6 +27,11 @@
 (check-expect ((swf-f a-swf) 10) 11)
 (check-error (set-swf-f! a-swf 3))
 
+(define: n*fn->n : (Number$ (Number$ -> Number$) -> Number$)
+  (lambda (n1 fn) (fn n1)))
+(check-expect (n*fn->n 5 add1) 6)
+(check-expect (n*fn->n 10 sub1) 9)
+
 (define broken-swf (make-swf add1))
 (set-swf-f! broken-swf number->string) ;; first-order check succeeds
 (check-error ((swf-f broken-swf) 3))  ;; contract violation
