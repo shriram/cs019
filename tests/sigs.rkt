@@ -19,6 +19,9 @@
   (+ x y))
 (check-expect (f 10 12) 22)
 
+(define: c1 : Char$ #\c)
+(check-expect c1 #\c)
+
 (define-struct: swf ([f : (Number$ -> Number$)]))
 (define a-swf (make-swf add1))
 (check-expect ((swf-f a-swf) 10) 11)

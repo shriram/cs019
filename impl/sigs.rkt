@@ -87,7 +87,7 @@
       ((signature-wrapper sig) val)
       (not-sig-error src)))
 
-(provide Number$ String$ Boolean$ Any$ Sig: Listof: Vectorof:)
+(provide Number$ String$ Char$ Boolean$ Any$ Sig: Listof: Vectorof:)
 
 (define-struct signature (pred wrapper ho? src))
 
@@ -207,12 +207,18 @@
      (with-syntax ([term stx])
        #'(first-order-sig string? #'term))]))
 
+(define-syntax (Char$ stx)
+  (syntax-case stx (char$)
+    [Char$
+     (with-syntax ([term stx])
+       #'(first-order-sig char? #'term))]))
+
 (define-syntax (Boolean$ stx)
   (syntax-case stx (Boolean$)
     [Boolean$
      (with-syntax ([term stx])
        #'(first-order-sig boolean? #'term))]))
-
+                                              
 (define-syntax (Any$ stx)
   (syntax-case stx (Any$)
     [Any$

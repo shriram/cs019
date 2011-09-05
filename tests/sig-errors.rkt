@@ -10,6 +10,8 @@
 ;(define: (f [l : (Listof: number?)]) -> Number$ (length l))
 ;(f (list 1 2))
 
+;(define: c1 : Char$ 3)
+
 (define BadSig1$ (or: (Number$ -> Number$) Number$))
 ;(define: bs1 : BadSig1$ 3)
 (define BadSig2$ (and: (Number$ -> Number$) Number$))
@@ -27,6 +29,7 @@
 ;(define: bl1 : (Listof: String$) (list "a" 2))
 ;(define: bl2 : (Listof: Boolean$) (list true false 1))
 
+;(define: v : (Sig: integer?) 1/2)
 
 (define: (n [l : (Listof: (Number$ -> Number$))]) -> (Listof: Number$)
   (map (lambda (f) (f 10)) l))

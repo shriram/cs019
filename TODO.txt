@@ -3,8 +3,8 @@ MISSING LANGUAGE:
 - add unchecked versions of sig forms
 - add support for undefined and test against shared
 - Hashof:, ...
-- test against last year's code
 - add parameterized signatures (esp for structs)
+- test against last year's code
 - signature checking on list mutation
 - signature checking on vector mutation
 - add Char$, etc.
@@ -15,7 +15,6 @@ MISSING LANGUAGE:
 
 ERROR MESSAGES:
 
-- better description names for signatures
 - parse-sig is losing the source location of (... -> ...)
   -- fails to highlight in or:
   -- fails in (funf 3)
@@ -36,6 +35,7 @@ NICETIES:
 - Improve first-order Vectorof$ to not convert to list
 - Remove redundancies in sigs.rkt
 - Scribble docs
+- better description names for signatures
 - multi-term define gets ASL error, not one from syntax-case
 - quicker detection of use of HO sigs in or: and and:? BUT it cannot
   be so early as to eagerly evaluate the params, else we can't have
