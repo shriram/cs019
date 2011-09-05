@@ -191,25 +191,33 @@
     [(_ S)
      (with-syntax ([Sp (parse-sig #'S)]
                    [term stx])
-       (if (eq? #'Sp #'S) ;; currently means S is (... -> ...)
+       (if (eq? #'Sp #'S) ;; currently means S is NOT (... -> ...)
            #'(first-order-sig S #'term)
            #'Sp))]))
 
-(define-syntax Number$
-  (syntax-id-rules ()
-    [_ (Sig: number?)]))
+(define-syntax (Number$ stx)
+  (syntax-case stx (Number$)
+    [Number$
+     (with-syntax ([term stx])
+       #'(first-order-sig number? #'term))]))
 
-(define-syntax String$
-  (syntax-id-rules ()
-    [_ (Sig: string?)]))
+(define-syntax (String$ stx)
+  (syntax-case stx (String$)
+    [String$
+     (with-syntax ([term stx])
+       #'(first-order-sig string? #'term))]))
 
-(define-syntax Boolean$
-  (syntax-id-rules ()
-    [_ (Sig: boolean?)]))
+(define-syntax (Boolean$ stx)
+  (syntax-case stx (Boolean$)
+    [Boolean$
+     (with-syntax ([term stx])
+       #'(first-order-sig boolean? #'term))]))
 
-(define-syntax Any$
-  (syntax-id-rules ()
-    [_ (Sig: (lambda (_) true))]))
+(define-syntax (Any$ stx)
+  (syntax-case stx (Any$)
+    [Any$
+     (with-syntax ([term stx])
+       #'(first-order-sig (lambda (_) true) #'term))]))
 
 ;; proc: is for internal use only.
 ;; Stand-alone procedural signatures are defined using Sig:; e.g.,

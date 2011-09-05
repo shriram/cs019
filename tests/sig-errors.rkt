@@ -24,6 +24,10 @@
 ;(add1 (f 3))
 ;(add1 (f (list 1 2 "3")))
 
+;(define: bl1 : (Listof: String$) (list "a" 2))
+;(define: bl2 : (Listof: Boolean$) (list true false 1))
+
+
 (define: (n [l : (Listof: (Number$ -> Number$))]) -> (Listof: Number$)
   (map (lambda (f) (f 10)) l))
 ;(n (list add1 number->string))

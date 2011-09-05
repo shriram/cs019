@@ -4,6 +4,9 @@
 ;(define: y : string? 4)
 (check-expect x 3)
 
+(define: gl : (Listof: Any$) (list 1 "two" true))
+(check-expect gl (list 1 "two" true))
+
 (define: (g [x : Number$]) -> String$ "x")
 (check-expect (g 10) "x")
 (check-error (g "x"))
