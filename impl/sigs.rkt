@@ -55,16 +55,21 @@
                             (let ([wrapped-args
                                    (let loop ([sigs (list S ... )]
                                               [args (list f ...)]
+                                              [sig-srcs (syntax->list #'(S ...))]
                                               [n 1])
                                      (if (empty? sigs)
                                          empty
                                          (cons (wrap (first sigs) 
-                                                     (first args))
-                                               (loop (rest sigs) (rest args) (add1 n)))))])
+                                                     (first args)
+                                                     (first sig-srcs))
+                                               (loop (rest sigs) 
+                                                     (rest args)
+                                                     (rest sig-srcs)
+                                                     (add1 n)))))])
                               (apply cnstr wrapped-args)))]
                          [setters
                           (lambda (struct-inst new-val)
-                            (setters struct-inst (wrap S new-val)))]
+                            (setters struct-inst (wrap S new-val #'S)))]
                          ...)
                      (values names ...)))))
              ;; This could be a define below, but it's a define-values
@@ -74,8 +79,17 @@
              (define-values (sig-name) 
                (first-order-sig pred)))))]))
 
-(define (wrap sig val)
-  ((signature-wrapper sig) val))
+(define (not-sig-error src)
+  (raise-syntax-error 'signature-violation "not a valid signature" src))
+
+(define wrap
+  (case-lambda
+    [(sig val)
+     (wrap sig val sig)]
+    [(sig val src)
+     (if (signature? sig)
+         ((signature-wrapper sig) val)
+         (not-sig-error src))]))
 
 (provide Number$ String$ Boolean$ Any$ pred->sig Listof: Vectorof:)
 
@@ -85,52 +99,56 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)])
-       #'(make-listof-sig S))]))
+       #'(make-listof-sig S #'S))]))
 
-(define (make-listof-sig s) ;; s has already been parsed
-  (if (signature-ho? s)
-      (make-signature list?
-                      (lambda (v)
-                        (map (lambda (e) (wrap s e)) v))
-                      true)
-      (let ([pred (lambda (v)
-                    (and (list? v)
-                         (andmap (signature-pred s) v)))])
-        (make-signature pred
-                        (lambda (v)
-                          (if (pred v)
-                              v
-                              (error 'signature-violation "~s not a list of ~a"
-                                     v
-                                     (object-name s))))
-                        false))))
+(define (make-listof-sig s sig-src) ;; s has already been parsed
+  (if (signature? s)
+      (if (signature-ho? s)
+          (make-signature list?
+                          (lambda (v)
+                            (map (lambda (e) (wrap s e sig-src)) v))
+                          true)
+          (let ([pred (lambda (v)
+                        (and (list? v)
+                             (andmap (signature-pred s) v)))])
+            (make-signature pred
+                            (lambda (v)
+                              (if (pred v)
+                                  v
+                                  (error 'signature-violation "~s not a list of ~a"
+                                         v
+                                         (object-name s))))
+                            false)))
+      (not-sig-error sig-src)))
 
 (define-syntax (Vectorof: stx)
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)])
-       #'(make-vectorof-sig S))]))
+       #'(make-vectorof-sig S #'S))]))
 
-(define (make-vectorof-sig s)  ;; s has already been parsed
-  (if (signature-ho? s)
-      (make-signature vector?
-                      (lambda (v)
-                        (list->vector
-                         (map (lambda (e) (wrap s e))
-                              (vector->list v))))
-                      true)
-      (let ([pred (lambda (v)
-                    (and (vector? v)
-                         (andmap (signature-pred s)
-                                 (vector->list v))))])
-        (make-signature pred
-                        (lambda (v)
-                          (if (pred v)
-                              v
-                              (error 'signature-violation "~s not a vector of ~a"
-                                     v
-                                     (object-name s))))
-                        false))))
+(define (make-vectorof-sig s sig-src)  ;; s has already been parsed
+  (if (signature? s)
+      (if (signature-ho? s)
+          (make-signature vector?
+                          (lambda (v)
+                            (list->vector
+                             (map (lambda (e) (wrap s e sig-src))
+                                  (vector->list v))))
+                          true)
+          (let ([pred (lambda (v)
+                        (and (vector? v)
+                             (andmap (signature-pred s)
+                                     (vector->list v))))])
+            (make-signature pred
+                            (lambda (v)
+                              (if (pred v)
+                                  v
+                                  (error 'signature-violation "~s not a vector of ~a"
+                                         v
+                                         (object-name s))))
+                            false)))
+      (not-sig-error sig-src)))
 
 (define (first-order-sig pred?)
   (make-signature pred?
@@ -166,7 +184,7 @@
           (lambda (v)
             (if (procedure? v)
                 (lambda (args ...)
-                  (wrap R (v (wrap A args) ...)))
+                  (wrap R (v (wrap A args #'A) ...) #'R))
                 (error 'signature-violation "~s is not a procedure" v)))
           true))]))
 
@@ -175,7 +193,7 @@
     [(_ id : S exp)
      (identifier? #'id)
      (with-syntax ([S (parse-sig #'S)])
-       #'(asl:define id (wrap S exp)))]
+       #'(asl:define id (wrap S exp 'S)))]
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
@@ -187,8 +205,8 @@
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
        #'(asl:lambda (a ...)
-                     (let ([a (wrap Sa a)] ...)
-                       (wrap Sr exp))))]))     
+                     (let ([a (wrap Sa a #'Sa)] ...)
+                       (wrap Sr exp #'Sr))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
@@ -196,16 +214,19 @@
      (with-syntax ([(S ...) (parse-sigs #'(S ...))])
        #'(first-order-sig
           (lambda (x)
-            (let loop ([sigs (list S ...)])
+            (let loop ([sigs (list S ...)]
+                       [sig-srcs (syntax->list #'(S ...))])
               (if (empty? sigs)
                   false
                   (let ([s (first sigs)])
-                    (if (signature-ho? s)
-                        (error 'signature-violation 
-                               "or: cannot combine higher-order signatures such as ~s" 
-                               (object-name s))
-                        (or ((signature-pred s) x)
-                            (loop (rest sigs))))))))))]))
+                    (if (signature? s)
+                        (if (signature-ho? s)
+                            (error 'signature-violation 
+                                   "or: cannot combine higher-order signatures such as ~s" 
+                                   (object-name s))
+                            (or ((signature-pred s) x)
+                                (loop (rest sigs) (rest sig-srcs))))
+                        (not-sig-error (first sig-srcs)))))))))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
@@ -213,29 +234,34 @@
      (with-syntax ([(S ...) (parse-sigs #'(S ...))])
        #'(first-order-sig
           (lambda (x)
-            (let loop ([sigs (list S ...)])
+            (let loop ([sigs (list S ...)]
+                       [sig-srcs (syntax->list #'(S ...))])
               (if (empty? sigs)
                   true
                   (let ([s (first sigs)])
-                    (if (signature-ho? s)
-                        (error 'signature-violation 
-                               "or: cannot combine higher-order signatures such as ~s" 
-                               (object-name s))
-                        (and ((signature-pred s) x)
-                             (loop (rest sigs))))))))))]))
+                    (if (signature? s)
+                        (if (signature-ho? s)
+                            (error 'signature-violation 
+                                   "or: cannot combine higher-order signatures such as ~s" 
+                                   (object-name s))
+                            (and ((signature-pred s) x)
+                                 (loop (rest sigs) (rest sig-srcs))))
+                        (not-sig-error (first sig-srcs)))))))))]))
 
 (define-syntax (not: stx)
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)])
-       #'(make-not-sig S))]))
+       #'(make-not-sig S #'S))]))
 
-(define (make-not-sig s)  ;; s is already parsed
-  (if (signature-ho? s)
-      (error 'signature-violation
-             "not: cannot negate higher-order signatures such as ~s"
-             (object-name s))
-      (first-order-sig (lambda (x) (not ((signature-pred s) x))))))
+(define (make-not-sig s sig-src)  ;; s is already parsed
+  (if (signature? s)
+      (if (signature-ho? s)
+          (error 'signature-violation
+                 "not: cannot negate higher-order signatures such as ~s"
+                 (object-name s))
+          (first-order-sig (lambda (x) (not ((signature-pred s) x)))))
+      (not-sig-error sig-src)))
 
 #|
 (provide : defvar:)
