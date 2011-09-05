@@ -96,70 +96,93 @@
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
                    [term stx])
-       #'(make-listof-sig S #'S #'term))]))
-
-(define (make-listof-sig s sig-src term-src) ;; s has already been parsed
-  (if (signature? s)
-      (if (signature-ho? s)
-          (make-signature list?
-                          (lambda (v)
-                            (map (lambda (e) (wrap s e sig-src)) v))
-                          true
-                          term-src)
-          (let ([pred (lambda (v)
-                        (and (list? v)
-                             (andmap (signature-pred s) v)))])
-            (make-signature pred
-                            (lambda (v)
-                              (if (pred v)
-                                  v
-                                  (error 'signature-violation "~s not a list of ~a"
-                                         v
-                                         (object-name s))))
-                            false
-                            term-src)))
-      (not-sig-error sig-src)))
+       #'(let ([s S]
+               [sig-src #'S]
+               [term-src #'term])
+           (if (signature? s)
+               (if (signature-ho? s)
+                   (make-signature list?
+                                   (lambda (v)
+                                     (map (lambda (e) (wrap s e sig-src)) v))
+                                   true
+                                   term-src)
+                   (let ([pred (lambda (v)
+                                 (and (list? v)
+                                      (andmap (signature-pred s) v)))])
+                     (make-signature pred
+                                     (lambda (v)
+                                       (if (pred v)
+                                           v
+                                           (if (list? v)
+                                               (raise-syntax-error
+                                                'signature-violation
+                                                "not an appropriate list"
+                                                v
+                                                #f
+                                                (list sig-src))
+                                               (raise-syntax-error
+                                                'signature-violation
+                                                "not a list"
+                                                v
+                                                #f
+                                                (list term-src)))))
+                                     false
+                                     term-src)))
+               (not-sig-error sig-src))))]))
 
 (define-syntax (Vectorof: stx)
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
                    [term stx])
-       #'(make-vectorof-sig S #'S #'term))]))
-
-(define (make-vectorof-sig s sig-src term-src) ;; s has already been parsed
-  (if (signature? s)
-      (if (signature-ho? s)
-          (make-signature vector?
-                          (lambda (v)
-                            (list->vector
-                             (map (lambda (e) (wrap s e sig-src))
-                                  (vector->list v))))
-                          true
-                          term-src)
-          (let ([pred (lambda (v)
-                        (and (vector? v)
-                             (andmap (signature-pred s)
-                                     (vector->list v))))])
-            (make-signature pred
-                            (lambda (v)
-                              (if (pred v)
-                                  v
-                                  (error 'signature-violation "~s not a vector of ~a"
-                                         v
-                                         (object-name s))))
-                            false
-                            term-src)))
-      (not-sig-error sig-src)))
+       #'(let ([s S]
+               [sig-src #'S]
+               [term-src #'term])
+           (if (signature? s)
+               (if (signature-ho? s)
+                   (make-signature vector?
+                                   (lambda (v)
+                                     (list->vector
+                                      (map (lambda (e) (wrap s e sig-src))
+                                           (vector->list v))))
+                                   true
+                                   term-src)
+                   (let ([pred (lambda (v)
+                                 (and (vector? v)
+                                      (andmap (signature-pred s)
+                                              (vector->list v))))])
+                     (make-signature pred
+                                     (lambda (v)
+                                       (if (pred v)
+                                           v
+                                           (if (vector? v)
+                                               (raise-syntax-error
+                                                'signature-violation
+                                                "not an appropriate vector"
+                                                v
+                                                #f
+                                                (list sig-src))
+                                               (raise-syntax-error
+                                                'signature-violation
+                                                "not a vector"
+                                                v
+                                                #f
+                                                (list term-src)))))
+                                     false
+                                     term-src)))
+               (not-sig-error sig-src))))]))
 
 (define (first-order-sig pred? term-src)
   (make-signature pred?
                   (lambda (v)
                     (if (pred? v)
                         v
-                        (error 'signature-violation "~s is not a ~a" 
-                               v
-                               (object-name pred?))))
+                        (raise-syntax-error
+                         'signature-violation
+                         (format "value ~a failed the signature" v)
+                         #f
+                         #f
+                         (list term-src))))
                   false
                   term-src))
 
@@ -206,7 +229,12 @@
             (if (procedure? v)
                 (lambda (args ...)
                   (wrap R (v (wrap A args #'A) ...) #'R))
-                (error 'signature-violation "~s is not a procedure" v)))
+                (raise-syntax-error
+                 'signature-violation
+                 "not a procedure"
+                 v
+                 #f
+                 (list #'term))))
           true
           #'term))]))
 
@@ -244,9 +272,12 @@
                   (let ([s (first sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
-                            (error 'signature-violation 
-                                   "or: cannot combine higher-order signatures such as ~s" 
-                                   (object-name s))
+                            (raise-syntax-error
+                             'signature-violation
+                             "or: cannot combine higher-order signature" 
+                             #'term
+                             #f
+                             (list (signature-src s)))
                             (or ((signature-pred s) x)
                                 (loop (rest sigs) (rest sig-srcs))))
                         (not-sig-error (first sig-srcs)))))))
@@ -266,9 +297,12 @@
                   (let ([s (first sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
-                            (error 'signature-violation 
-                                   "or: cannot combine higher-order signatures such as ~s" 
-                                   (object-name s))
+                            (raise-syntax-error
+                             'signature-violation
+                             "and: cannot combine higher-order signature" 
+                             #'term
+                             #f
+                             (list (signature-src s)))
                             (and ((signature-pred s) x)
                                  (loop (rest sigs) (rest sig-srcs))))
                         (not-sig-error (first sig-srcs)))))))
@@ -279,16 +313,17 @@
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
                    [term stx])
-       #'(make-not-sig S #'S #'term))]))
-
-(define (make-not-sig s sig-src term-src)  ;; s is already parsed
-  (if (signature? s)
-      (if (signature-ho? s)
-          (error 'signature-violation
-                 "not: cannot negate higher-order signatures such as ~s"
-                 (object-name s))
-          (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-src))
-      (not-sig-error sig-src)))
+       #'(let ([s S]
+               [sig-src #'S]
+               [term-src #'term])
+           (if (signature? s)
+               (if (signature-ho? s)
+                   (raise-syntax-error
+                    'signature-violation
+                    "not: cannot negate higher-order signature" 
+                    #'term)
+                   (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-src))
+               (not-sig-error sig-src))))]))
 
 #|
 (provide : defvar:)

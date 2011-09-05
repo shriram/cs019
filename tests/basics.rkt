@@ -51,13 +51,13 @@
 
 ;(struct: (a) BackPtr ([n : (Node a)] [p : Integer]) #:transparent)
 ;(struct: (a) Cursor ([below : (Tree a)] [above : (Listof (BackPtr a))]) #:transparent)
-(define-struct: BackPtr ([n : Node$] [p : (pred->sig integer?)]))
+(define-struct: BackPtr ([n : Node$] [p : (Sig: integer?)]))
 (define-struct: Cursor ([below : Tree$] [above : (Listof: BackPtr$)]))
 
-(define Opt-Cursor$ (pred->sig (lambda (v)
-                                 (or (None? v)
-                                     (and (Some? v)
-                                          (Cursor? (Some-v v)))))))
+(define Opt-Cursor$ (Sig: (lambda (v)
+                            (or (None? v)
+                                (and (Some? v)
+                                     (Cursor? (Some-v v)))))))
 
 ;(: find (All (a) ((Tree a) (a -> Boolean) -> (Cursor a))))
 (define: (find [t : Tree$] [p : (Any$ -> Boolean$)]) -> Cursor$
@@ -78,7 +78,7 @@
 ;                           (Node a)
 ;                           (Listof (BackPtr a)) -> (Opt (Cursor a)))))
      (define: (search-kids [kids : (Listof: Tree$)]
-                           [n : (pred->sig integer?)]
+                           [n : (Sig: integer?)]
                            [first-above : Node$]
                            [rest-above : (Listof: BackPtr$)]) -> Opt-Cursor$
        (cond
@@ -94,7 +94,7 @@
       (if (None? v) (error 'find "no such node") (Some-v v)))))
 
 ;(: down (All (a) ((Cursor a) Integer -> (Cursor a))))
-(define: (down [c : Cursor$] [n : (pred->sig integer?)]) -> Cursor$
+(define: (down [c : Cursor$] [n : (Sig: integer?)]) -> Cursor$
   (let ([v (Cursor-below c)])
     (cond
       [(MtNode? v) (error 'down "impossible to go down")]
@@ -116,7 +116,7 @@
           [kids (Node-kids node)])
       (make-Node val
                  (build-list (length kids)
-                             (lambda: ([i : (pred->sig integer?)]) -> Tree$
+                             (lambda: ([i : (Sig: integer?)]) -> Tree$
                                       (if (= i posn)
                                           replace-with
                                           (list-ref kids i))))))))
@@ -136,8 +136,8 @@
       (->tree (up c))))
 
 (define T (make-Node 7 (list (make-Node 3 empty) (make-MtNode) (make-Node 5 empty))))
-(define c0 (find T (lambda: ([n : (pred->sig integer?)]) -> Boolean$ (= n 3))))
-(define c2 (find T (lambda: ([n : (pred->sig integer?)]) -> Boolean$ (= n 5))))
+(define c0 (find T (lambda: ([n : (Sig: integer?)]) -> Boolean$ (= n 3))))
+(define c2 (find T (lambda: ([n : (Sig: integer?)]) -> Boolean$ (= n 5))))
 (define c3                (replace (down (up c0) 1) T)             )
 (define c4 (replace (down (replace (down (up c0) 1) T) 0) (make-MtNode)))
 

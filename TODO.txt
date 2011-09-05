@@ -5,27 +5,20 @@ MISSING LANGUAGE:
 - Hashof:, ...
 - test against last year's code
 - add parameterized signatures (esp for structs)
+- signature checking on list mutation
+- signature checking on vector mutation
+- bizarre parse:
+  (define: s2n>> : (String$ ->> Number$) string->number)
+  results in
+  signature-violation: value #<procedure:string->number> failed the signature in: (Sig: string?)
 
 ERROR MESSAGES:
 
-- better error source reporting
 - better description names for signatures
-- ((lambda: ([m : Number$] [n : Number$]) -> Number$ +) 1 2)
-  produces
-  sigs.rkt: ... signature-violation: #<procedure:+> is not a number?
-- (define: v : (not: (Number$ -> Number$)) 5)
-  produces
-  sigs.rkt: ... cannot negate higher-order signatures such as signature
-- error messages don't seem to use the right printer: eg,
-  (define: s2n : (proc$ (String$ ->> Number$)) string->number)
-  > (s2n "x")
-  . . sigs.rkt:64:24: signature-violation: #f is not a number
-  (prints #f instead of false)
-and worse,
-  (tree-sum (make-nd 10 (make-nd 5 (make-mt) (make-mt))
-                        (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt))))
-  . . sigs.rkt:87:24: signature-violation: 10 is not a #f
-  (prints #f instead of a useful name)
+- parse-sig is losing the source location of (... -> ...)
+  -- fails to highlight in or:
+  -- fails in (funf 3)
+- error messages don't use the right printer
 
 DOCUMENTATION:
 
@@ -36,6 +29,7 @@ DOCUMENTATION:
 NICETIES:
 
 - Indentation levels for define:, lambda:, etc.
+- syntax parse
 - Test with debugger
 - Turn into a planet package
 - Improve first-order Vectorof$ to not convert to list
