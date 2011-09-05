@@ -1,4 +1,4 @@
-#lang s-exp "../cs019.rkt"
+#lang planet cs019/cs019
 
 (require "provider.rkt")
 

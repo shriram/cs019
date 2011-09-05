@@ -7,7 +7,6 @@ MISSING LANGUAGE:
 - test against last year's code
 - signature checking on list mutation
 - signature checking on vector mutation
-- add Char$, etc.
 - bizarre parse:
   (define: s2n>> : (String$ ->> Number$) string->number)
   results in
@@ -24,14 +23,13 @@ DOCUMENTATION:
 
 - need to change printer to constructor
 - you can set your default #lang in the menu
-- pred->sig, or:, and:, not: expect flat predicates
+- Sig: [except for funs], or:, and:, not: expect flat predicates
 
 NICETIES:
 
 - Indentation levels for define:, lambda:, etc.
 - syntax parse
 - Test with debugger
-- Turn into a planet package
 - Improve first-order Vectorof$ to not convert to list
 - Remove redundancies in sigs.rkt
 - Scribble docs

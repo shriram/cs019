@@ -1,0 +1,23 @@
+Make and switch to a branch that excludes undesired files.
+
+Outside the repo (paying attention to version #s),
+
+              #username #package  #version #repo directory name
+  planet link cs019     cs019.plt 1   0    cs019
+
+  planet create cs019
+
+This creates cs019.rkt.
+                                #version
+  planet unlink cs019 cs019.plt 1   0
+
+                                    #version
+  planet fileinject cs019 cs019.plt 1   0
+
+Test.
+
+Go to 
+
+  http://planet.racket-lang.org/add.ss
+
+log in and upload the .plt file.

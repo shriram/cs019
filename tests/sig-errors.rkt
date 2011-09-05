@@ -1,4 +1,4 @@
-#lang s-exp "../cs019.rkt"
+#lang planet cs019/cs019
 
 ;; need a test for the passing of source to the wrap in structure setters
 ;; incorporate commented-out lines from tests/sigs.rkt

@@ -1,4 +1,4 @@
-#lang s-exp "../cs019.rkt"
+#lang planet cs019/cs019
 
 ;; Run (do-worlds) to test big-bang and animate programs
 
