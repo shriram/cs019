@@ -1,0 +1,156 @@
+In this class we will use the language
+
+  #lang planet cs019/cs019
+
+This language offers the following features:
+
+* All of the Advanced Student Language level (henceforth, "ASL") of
+  How to Design Programs:
+
+  http://docs.racket-lang.org/htdp-langs/advanced.html
+
+* Images (don't require it explicitly in your code):
+
+  http://docs.racket-lang.org/teachpack/2htdpimage.html
+
+* World and Universe (don't require them explicitly in your code):
+
+  http://docs.racket-lang.org/teachpack/2htdpuniverse.html
+
+* The following hash table primitives:
+
+  http://docs.racket-lang.org/reference/hashtables.html
+
+  hash hash-set hash-update 
+  hash-iterate-first hash-iterate-next 
+  hash-iterate-key hash-iterate-value
+
+* The following require and provide sub-forms:
+
+  http://docs.racket-lang.org/reference/require.html
+
+  require:
+    only-in except-in prefix-in rename-in combine-in planet
+
+  provide:
+    all-defined-out all-from-out rename-out except-out
+    prefix-out struct-out combine-out protect-out
+
+* The primitive open-image-url:
+
+  (String$ -> Image$)
+
+* And signatures, described below.
+
+SIGNATURES
+==========
+
+Signatures are statements of the nature of values expected by parts of
+programs.  They can be applied to not only base types but also to
+higher-order types (such as functions).  Signatures are checked
+dynamically, so unless you have achieved full coverage of your code,
+you cannot be sure that there aren't lurking signature violations.
+(If you instead want static checking, use Typed Racket.)
+
+Signing Constructs
+------------------
+
+There are several constructs for signing values in programs.  Note
+that the spaces around the colons are required, not optional:
+
+  (define: <var> : <sig> <expr>)
+
+This is identical to (define <var> <expr>), except the value is
+checked by <sig>.
+
+  (define: (<id> ([<id> : <sig>] ...)) -> <sig>
+    <expr>)
+
+This is identical to (define (<id> <id> ...) <expr>), except the
+argument and return values are checked by the <sig>s.
+
+  (lambda: ([<id> : <sig>] ...) -> <sig>
+    <expr>)
+
+This is identical to (lambda (<id> ...) <expr>), except the argument
+and return values are checked by the <sig>s.
+
+  (define-struct: <id> ([<id> : <sig>] ...))
+
+This is identical to (define-struct <id> (<id> ...)), except the
+fields are checked by the <sig>s.
+
+Primitive Signatures
+--------------------
+
+There are several built-in signatures and signature-makers:
+
+<sig> ::= Number$
+        | String$
+        | Char$
+        | Boolean$
+        | Image$
+        | Any$
+
+The basic signatures correspond to the primitive predicate (Number$ ->
+number?, Image$ -> image?, etc).  Any$ matches any value.
+
+        | (Listof: <sig>)
+        | (Vectorof: <sig>)
+
+Signatures for aggregates check that the elements of the aggregate
+match the given sub-signatures.
+
+        | (<sig> ... -> <sig>)
+
+The (<sig> ... -> <sig>) signature checks a the arguments and return
+of a functional value.
+
+        | (and: <sig> ...)
+        | (or: <sig> ...)
+        | (not: <sig>)
+
+The construct conjunctions, disjunctions, and negations of signatures.
+They can only operate on flat signatures, defined below.
+
+	| (Sig: <pred>)
+
+Sometimes it is useful to convert an arbitrary predicate into a
+signature; the Sig: form enables that.  The language expects, but does
+not check, that the predicate is flat.
+
+E.g.: 
+  (define (prime? n) ...)
+  (define Prime$ (Sig: prime?))
+
+        | (Sig: (<sig> ... -> <sig>))
+
+Finally, it is sometimes useful to give a name to a function
+signature.  The Sig: form enables this too.
+
+E.g.:
+  (define n->n$ (Sig: (Number$ -> Number$)))
+  (define: f : n->n$ add1)
+
+Flatness
+--------
+
+A flat predicate (and correspondingly, signature) can check the entire
+value for the desired characteristic right away.  
+
+The easiest way to understand this property is to examine signatures
+that are not flat, the canonical example being function signatures.
+These can only check that a value is a function, but cannot be certain
+that they consume and produce the right values; this checking is
+deferred until the function is actually used.  For instance, this
+declaration fails immediately:
+
+  (define: f : (Number$ -> Number$) 3)
+
+but this one does not:
+
+  (define: f : (Number$ -> Number$) number->string)
+
+We only discover the violation when the function is used:
+
+  (f 10)
