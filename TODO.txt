@@ -1,5 +1,11 @@
 MISSING LANGUAGE:
 
+- how did this happen?
+  (define n->n$ (Sig: (Number$ -> Number$)))
+  (define: f : n->n$ add1)
+  > f
+  (lambda (a1) ...)
+- add Image$
 - add parameterized signatures (esp for structs)
 - set flag so shared doesn't print unless there are true cycles
 - bizarre parse:
@@ -22,11 +28,6 @@ ERROR MESSAGES:
   -- fails to highlight in or:
   -- fails in (funf 3)
 - error messages don't use the right printer
-
-DOCUMENTATION:
-
-- you can set your default #lang in the menu
-- Sig: [except for funs], or:, and:, not: expect flat predicates
 
 NICETIES:
 
