@@ -1,16 +1,19 @@
 MISSING LANGUAGE:
 
-- add unchecked versions of sig forms
-- add support for undefined and test against shared
-- Hashof:, ...
 - add parameterized signatures (esp for structs)
-- test against last year's code
-- signature checking on list mutation
-- signature checking on vector mutation
 - bizarre parse:
   (define: s2n>> : (String$ ->> Number$) string->number)
   results in
   signature-violation: value #<procedure:string->number> failed the signature in: (Sig: string?)
+
+- test against last year's code
+
+- add unchecked versions of sig forms
+- add support for undefined and test against shared
+- Hashof:, ...
+
+- signature checking on list mutation
+- signature checking on vector mutation
 
 ERROR MESSAGES:
 

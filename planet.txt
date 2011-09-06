@@ -14,6 +14,11 @@ This creates cs019.rkt.
                                     #version
   planet fileinject cs019 cs019.plt 1   0
 
+Remove using
+
+                                     #version
+  raco planet remove cs019 cs019.plt 1   0
+
 Test.
 
 Go to 
