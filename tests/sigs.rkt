@@ -22,6 +22,9 @@
 (define: c1 : Char$ #\c)
 (check-expect c1 #\c)
 
+(define: key1 : Key$ "up")
+(check-expect key1 "up")
+
 (define: img1 : Image$ (circle 10 "solid" "red"))
 (define: img2 : Image$ (overlay img1 img1))
 (check-expect img1 (circle 10 "solid" "red"))

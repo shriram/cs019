@@ -20,6 +20,8 @@
 
 (define Posn$ (Sig: asl:posn?))
 (provide Posn$)
+(define Key$ String$)
+(provide Key$)
 
 (require "impl/open-image-url.rkt")
 (provide open-image-url)
