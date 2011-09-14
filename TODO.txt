@@ -5,9 +5,7 @@ MISSING LANGUAGE:
   (define: f : n->n$ add1)
   > f
   (lambda (a1) ...)
-- add Image$
 - add parameterized signatures (esp for structs)
-- set flag so shared doesn't print unless there are true cycles
 - bizarre parse:
   (define: s2n>> : (String$ ->> Number$) string->number)
   results in

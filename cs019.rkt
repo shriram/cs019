@@ -18,11 +18,16 @@
                        (all-from-out lang/htdp-advanced)))
 (provide (rename-out (top-level #%module-begin)))
 
+(define Posn$ (Sig: asl:posn?))
+(provide Posn$)
+
 (require "impl/open-image-url.rkt")
 (provide open-image-url)
 
 (require "impl/sigs.rkt")
 (provide [all-from-out "impl/sigs.rkt"])
+(provide Image$)
+(define Image$ (Sig: image?))
 
 (require 2htdp/image 2htdp/universe)
 (provide [all-from-out 2htdp/image] [all-from-out 2htdp/universe])

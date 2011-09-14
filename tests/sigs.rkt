@@ -22,6 +22,16 @@
 (define: c1 : Char$ #\c)
 (check-expect c1 #\c)
 
+(define: img1 : Image$ (circle 10 "solid" "red"))
+(define: img2 : Image$ (overlay img1 img1))
+(check-expect img1 (circle 10 "solid" "red"))
+; (check-expect img1 img2) fails, expectedly, even though they are visually the same
+
+(define: pos1 : Posn$ (make-posn 5 10))
+(define: pos2 : Posn$ (make-posn 1 2))
+(check-expect (posn-x pos1) 5)
+(check-expect (posn-y pos2) 2)
+
 (define-struct: swf ([f : (Number$ -> Number$)]))
 (define a-swf (make-swf add1))
 (check-expect ((swf-f a-swf) 10) 11)
