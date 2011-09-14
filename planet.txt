@@ -1,6 +1,7 @@
 Make a copy that leaves out non-repo files:
 
   git archive --format=tar --prefix=cs019/ HEAD | ( cd /home/sk/Desktop/Junk && tar -xf -)
+  cd /home/sk/Desktop/Junk/cs019
   rm *.txt
   rm -r tests
   cd ..
