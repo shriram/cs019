@@ -67,7 +67,7 @@
                      [pred (syntax-case #'(names ...) ()
                              [(struct:name-id const predicate misc ...)
                               #'predicate])])
-         #'(begin
+         #`(begin
              (define-values (names ...)
                (let ()
                  (begin

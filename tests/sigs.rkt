@@ -203,7 +203,6 @@
 (check-error (i string->number))
 ;; Unfortunately, the error that comes in isn't a signature error;
 ;; it encounters string->number first.
-(i string->number)
 ; (check-violation-highlights (i string->number) (list "Number$"))
 
 (define: (j [f : (String$ String$ String$ -> Number$)]) -> Number$
@@ -212,6 +211,9 @@
                    (string->number (string-append s1 s2 s3))))
               123456)
 (check-error (j string-append))
+(check-violation-highlights
+ (j string-append)
+ (list "Number$"))
 
 (define: (j2 [f : (String$ String$ -> String$)] [g : (String$ -> String$)]) -> String$
   (g (f "abc" "def")))
@@ -224,6 +226,9 @@
          dx))))
 (check-within ((d/dx (lambda: ([x : Number$]) -> Number$ (* x x))) 10) 19 21)
 (check-error ((d/dx number->string) 10))
+(check-violation-highlights
+  ((d/dx number->string) 10)
+  (list "Number$"))
 
 (check-within
  ((lambda: ([ddx : ((Number$ -> Number$) -> (Number$ -> Number$))]) -> Number$
@@ -233,6 +238,9 @@
 
 (check-expect (local ([define: x : Number$ 3]) x) 3)
 (check-error (local ([define: x : String$ 3]) x))
+(check-violation-highlights
+ (local ([define: x : String$ 3]) x)
+ (list "String$"))
 
 (check-expect (local ([define: (f [x : Number$]) -> String$
                         (number->string x)])
@@ -243,14 +251,30 @@
                 (f number->string))
               "10")
 (check-error (local ([define: (f [x : Number$]) -> String$
-                        (number->string x)])
-                (f "10")))
+                       (number->string x)])
+               (f "10")))
+(check-violation-highlights
+ (local ([define: (f [x : Number$]) -> String$
+           (number->string x)])
+   (f "10"))
+ (list "Number$"))
 
 (check-expect (local ([define-struct: m ([v : Number$] [w : String$])])
                 (m-v (make-m 5 "x")))
               5)
 (check-error (local ([define-struct: m ([v : Number$] [w : String$])])
                (m-v (make-m "x" 5))))
+(check-violation-highlights
+ (local ([define-struct: m ([v : Number$] [w : String$])])
+   (m-v (make-m "x" 5)))
+ (list "Number$"))
+(check-error (local ([define-struct: m ([v : Number$] [w : String$])])
+               (m-v (make-m 4 5))))
+(check-violation-highlights
+ (local ([define-struct: m ([v : Number$] [w : String$])])
+   (m-v (make-m 4 5)))
+ (list "String$"))
+
 
 (define: l : (Listof: Number$) (list 1 2 3))
 (check-expect l (list 1 2 3))
@@ -260,6 +284,9 @@
   (map (lambda (f) (f 10)) l))
 (check-expect (n (list add1 sub1)) (list 11 9))
 (check-error (n (list add1 number->string)))
+(check-violation-highlights
+ (n (list add1 number->string))
+ (list "Number$"))
 (check-error (n (list add1 string->number)))
 
 (define: vs : (Vectorof: String$)
