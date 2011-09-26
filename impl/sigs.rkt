@@ -10,10 +10,28 @@
 (provide define: lambda: define-struct: and: or: not:)
 
 
-(define-struct (signature-violation exn:fail) (srclocs)
+(define-struct (signature-violation exn:fail) 
+  (srclocs)  ;; listof srcloc-vector
   #:property prop:exn:srclocs
   (lambda (violation)
-    (signature-violation-srclocs violation)))
+    (map (lambda (vec)
+           (apply srcloc (vector->list vec)))
+         (signature-violation-srclocs violation))))
+
+
+;; syntax-srcloc: syntax -> srcloc-vector
+(define-for-syntax (syntax-srcloc stx)
+  (vector (syntax-source stx)
+          (syntax-line stx)
+          (syntax-column stx)
+          (syntax-position stx)
+          (syntax-span stx)))
+(define (syntax-srcloc stx)
+  (vector (syntax-source stx)
+          (syntax-line stx)
+          (syntax-column stx)
+          (syntax-position stx)
+          (syntax-span stx)))
 
 
 
@@ -87,8 +105,12 @@
              (define-values (sig-name) 
                (first-order-sig pred #'term)))))]))
 
+
+(define (raise-signature-violation msg srclocs)
+  (raise (signature-violation msg (current-continuation-marks) srclocs)))
+
 (define (not-sig-error src)
-  (raise-syntax-error 'signature-violation "not a valid signature" src))
+  (raise-signature-violation "not a valid signature" (syntax-srcloc src)))
 
 (define (wrap sig val src)
   (if (signature? sig)
@@ -103,7 +125,9 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
-                   [term stx])
+                   [sig-srcloc (syntax-srcloc #'S)]
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(let ([s S]
                [sig-src #'S]
                [term-src #'term])
@@ -122,17 +146,11 @@
                                        (if (pred v)
                                            v
                                            (if (list? v)
-                                               (raise-syntax-error
-                                                'signature-violation
-                                                "not an appropriate list"
-                                                v
-                                                #f
-                                                (list sig-src))
-                                               (raise-syntax-error
-                                                'signature-violation
-                                                "not a list"
-                                                v
-                                                #f
+                                               (raise-signature-violation
+                                                (format "not an appropriate list: ~e" v)
+                                                (list sig-srcloc))
+                                               (raise-signature-violation
+                                                (format "not a list: ~e" v)
                                                 (list term-src)))))
                                      #f
                                      term-src)))
@@ -142,7 +160,9 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
-                   [term stx])
+                   [term stx]
+                   [sig-srcloc (syntax-srcloc #'S)]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(let ([s S]
                [sig-src #'S]
                [term-src #'term])
@@ -164,18 +184,12 @@
                                        (if (pred v)
                                            v
                                            (if (vector? v)
-                                               (raise-syntax-error
-                                                'signature-violation
-                                                "not an appropriate vector"
-                                                v
-                                                #f
-                                                (list sig-src))
-                                               (raise-syntax-error
-                                                'signature-violation
-                                                "not a vector"
-                                                v
-                                                #f
-                                                (list term-src)))))
+                                               (raise-signature-violation
+                                                (format "not an appropriate vector: ~e" v)
+                                                (list sig-srcloc))
+                                               (raise-signature-violation
+                                                (format "not a vector: ~e" v)
+                                                (list term-srcloc)))))
                                      #f
                                      term-src)))
                (not-sig-error sig-src))))]))
@@ -185,12 +199,9 @@
                   (lambda (v)
                     (if (pred? v)
                         v
-                        (raise-syntax-error
-                         'signature-violation
+                        (raise-signature-violation
                          (format "value ~a failed the signature" v)
-                         #f
-                         #f
-                         (list term-src))))
+                         (list (syntax-srcloc term-src)))))
                   #f
                   term-src))
 
@@ -244,19 +255,17 @@
      (with-syntax ([(args ...) (generate-temporaries #'(A ...))]
                    [(A ...) (parse-sigs #'(A ...))]
                    [R (parse-sig #'R)]
-                   [term stx])
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(make-signature
           procedure?
           (lambda (v)
             (if (procedure? v)
                 (lambda (args ...)
                   (wrap R (v (wrap A args #'A) ...) #'R))
-                (raise-syntax-error
-                 'signature-violation
-                 "not a procedure"
-                 v
-                 #f
-                 (list #'term))))
+                (raise-signature-violation
+                 (format "not a procedure: ~e" v)
+                 (list term-srcloc))))
           #t
           #'term))]))
 
@@ -284,7 +293,8 @@
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
-                   [term stx])
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(first-order-sig
           (lambda (x)
             (let loop ([sigs (list S ...)]
@@ -294,12 +304,10 @@
                   (let ([s (car sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
-                            (raise-syntax-error
-                             'signature-violation
+                            (raise-signature-violation
                              "or: cannot combine higher-order signature" 
-                             #'term
-                             #f
-                             (list (signature-src s)))
+                             (list term-srcloc
+                                   (syntax-srcloc (signature-src s))))
                             (or ((signature-pred s) x)
                                 (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
@@ -309,7 +317,8 @@
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
-                   [term stx])
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(first-order-sig
           (lambda (x)
             (let loop ([sigs (list S ...)]
@@ -319,12 +328,9 @@
                   (let ([s (car sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
-                            (raise-syntax-error
-                             'signature-violation
+                            (raise-signature-violation
                              "and: cannot combine higher-order signature" 
-                             #'term
-                             #f
-                             (list (signature-src s)))
+                             (list term-srcloc (syntax-srcloc (signature-src s))))
                             (and ((signature-pred s) x)
                                  (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
@@ -337,13 +343,13 @@
                    [term stx])
        #'(let ([s S]
                [sig-src #'S]
-               [term-src #'term])
+               [term-src #'term]
+               [term-srcloc (syntax-srcloc #'term)])
            (if (signature? s)
                (if (signature-ho? s)
-                   (raise-syntax-error
-                    'signature-violation
+                   (raise-signature-violation
                     "not: cannot negate higher-order signature" 
-                    #'term)
+                    (list term-srcloc))
                    (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-src))
                (not-sig-error sig-src))))]))
 
