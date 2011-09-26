@@ -7,7 +7,8 @@
          [for-syntax racket])
 
 
-(provide define: lambda: define-struct: and: or: not:)
+(provide define: lambda: define-struct: and: or: not:
+         (struct-out signature-violation))
 
 
 (define-struct (signature-violation exn:fail) 

@@ -1,8 +1,17 @@
 #lang planet cs019/cs019
+(require "sigs-support.rkt")
 
 (define: x : Number$ 3)
 ;(define: y : string? 4)
 (check-expect x 3)
+
+
+;; The error should focus around the signature "Number$" here.
+(check-violation-highlights 
+ (local [(define: x : Number$ "three")]
+   'huh?)
+ (list "Number$"))
+
 
 (define: gl : (Listof: Any$) (list 1 "two" true))
 (check-expect gl (list 1 "two" true))
