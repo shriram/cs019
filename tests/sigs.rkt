@@ -20,6 +20,22 @@
 (check-expect (g 10) "x")
 (check-error (g "x"))
 
+(check-violation-highlights
+ (g "x")
+ (list "Number$"))
+
+
+(define: (g2 [x : Number$]) -> String$ 'not-a-string)
+(check-error (g2 "10"))
+(check-error (g2 10))
+(check-violation-highlights
+ (g2 "10")
+ (list "Number$"))
+(check-violation-highlights
+ (g2 10)
+ (list "String$"))
+
+
 (define: (unchk [x : Any$]) -> Number$ (add1 x))
 (check-expect (unchk 10) 11)
 (check-error (unchk "x"))
@@ -48,6 +64,11 @@
 (define a-swf (make-swf add1))
 (check-expect ((swf-f a-swf) 10) 11)
 (check-error (set-swf-f! a-swf 3))
+(check-violation-highlights 
+ (set-swf-f! a-swf 3)
+ ;; What should be highlighted is the entire signature
+ (list "(Number$ -> Number$)"))
+
 
 (define: n*fn->n : (Number$ (Number$ -> Number$) -> Number$)
   (lambda (n1 fn) (fn n1)))
@@ -57,6 +78,9 @@
 (define broken-swf (make-swf add1))
 (set-swf-f! broken-swf number->string) ;; first-order check succeeds
 (check-error ((swf-f broken-swf) 3))  ;; contract violation
+(check-violation-highlights
+ ((swf-f broken-swf) 3)
+ (list "Number$"))
 
 (check-expect (let ([a (make-swf add1)])
                 (list ((swf-f a) 10)
@@ -70,7 +94,13 @@
 (define-struct: nd ([v : Number$] [l : Tree$] [r : Tree$]))
 
 (check-error (set-nd-v! (make-nd 0 (make-mt) (make-mt)) "x"))
+(check-violation-highlights
+ (set-nd-v! (make-nd 0 (make-mt) (make-mt)) "x")
+ (list "Number$"))
 (check-error (set-nd-l! (make-nd 0 (make-mt) (make-mt)) "x"))
+(check-violation-highlights
+ (set-nd-l! (make-nd 0 (make-mt) (make-mt)) "x")
+ (list "(or: mt$ nd$)"))
 (check-expect (let ([n (make-nd 0 (make-mt) (make-mt))])
                 (begin
                   (set-nd-v! n 5)
@@ -84,7 +114,14 @@
     [(nd? t) 1]))
 (check-expect (a (make-mt)) 0)
 (check-error (a (make-nd 1 2 3)))
+(check-violation-highlights
+ (a (make-nd 1 2 3))
+ (list "(or: mt$ nd$)"))
 (check-error (a 3))
+(check-violation-highlights
+ (a 3)
+ (list "(Sig: mt?)"))
+
 
 (define: (tree-sum (t : Tree$)) -> Number$
   (cond
@@ -97,6 +134,12 @@
 (check-error (tree-sum (make-nd 10 
                                 (make-nd 5 (make-mt) (make-mt))
                                 (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt)))))
+(check-violation-highlights
+ (tree-sum (make-nd 10 
+                    (make-nd 5 (make-mt) (make-mt))
+                    (make-nd 2 (make-nd 1 (make-mt) 10) (make-mt))))
+ (list "(or: mt$ nd$)"))
+ 
 
 (define: (prime? [n : (Sig: (lambda (n) (and (positive? n) (integer? n))))]) 
   -> Boolean$
@@ -110,7 +153,13 @@
 (check-expect (prime? 10) false)
 (check-expect (prime? 5) true)
 (check-error (prime? -1))
+(check-violation-highlights 
+ (prime? -1) 
+ (list "(Sig: (lambda (n) (and (positive? n) (integer? n))))"))
 (check-error (prime? 1.5))
+(check-violation-highlights
+ (prime? 1.5)
+ (list "(Sig: (lambda (n) (and (positive? n) (integer? n))))"))
 
 (define BadSig$ (or: (Number$ -> Number$) Number$))
 ;(define: bs : BadSig 3)
@@ -133,10 +182,14 @@
 (define: a1 : n->n add1)
 (check-expect (a1 5) 6)
 (check-error (a1 "x"))
+(check-violation-highlights (a1 "x")
+                            (list "Number$"))
 
 (define: a2 : (Number$ -> Number$) add1)
 (check-expect (a2 5) 6)
 (check-error (a2 "x"))
+(check-violation-highlights (a2 "x")
+                            (list "Number$"))
 
 (define: s2n : (String$ -> Number$) string->number)
 (check-expect (s2n "123") 123)
@@ -146,7 +199,12 @@
   (f 5))
 (check-expect (i add1) 6)
 (check-error (i number->string))
+(check-violation-highlights (i number->string) (list "Number$"))
 (check-error (i string->number))
+;; Unfortunately, the error that comes in isn't a signature error;
+;; it encounters string->number first.
+(i string->number)
+; (check-violation-highlights (i string->number) (list "Number$"))
 
 (define: (j [f : (String$ String$ String$ -> Number$)]) -> Number$
   (f "12" "34" "56"))

@@ -249,12 +249,13 @@
        (with-syntax ([(A-srcloc ...) 
                       (map syntax-srcloc (syntax->list #'(A ...)))]
                      [R-srcloc (syntax-srcloc #'R)])
-         #'(make-signature
+         #`(make-signature
             procedure?
             (lambda (v)
               (if (procedure? v)
                   (lambda (args ...)
-                    (wrap R (v (wrap A args A-srcloc) ...) R-srcloc))
+                    #,(quasisyntax/loc stx
+                        (wrap R #,(syntax/loc stx (v (wrap A args A-srcloc) ...)) R-srcloc)))
                   (raise-signature-violation
                    (format "not a procedure: ~e" v)
                    (list term-srcloc))))
@@ -271,7 +272,9 @@
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
-       #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp)))]))
+       #`(asl:define f 
+                     #,(syntax/loc stx
+                         (lambda: ([a : Sa] ...) -> Sr exp))))]))
 
 (define-syntax (lambda: stx)
   (syntax-case stx (: ->)
@@ -280,9 +283,10 @@
                    [Sr (parse-sig #'Sr)])
        (with-syntax ([(Sa-srcloc ...) (map syntax-srcloc (syntax->list #'(Sa ...)))]
                      [Sr-srcloc (syntax-srcloc #'Sr)])
-       #'(asl:lambda (a ...)
+       #`(asl:lambda (a ...)
                      (let ([a (wrap Sa a Sa-srcloc)] ...)
-                       (wrap Sr exp Sr-srcloc)))))]))     
+                       #,(syntax/loc stx
+                           (wrap Sr exp Sr-srcloc))))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
