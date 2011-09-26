@@ -26,13 +26,6 @@
           (syntax-column stx)
           (syntax-position stx)
           (syntax-span stx)))
-(define (syntax-srcloc stx)
-  (vector (syntax-source stx)
-          (syntax-line stx)
-          (syntax-column stx)
-          (syntax-position stx)
-          (syntax-span stx)))
-
 
 
 (define-for-syntax (parse-sig stx)
@@ -40,7 +33,8 @@
     [(A ... -> R)
      (with-syntax ([(A ...) (map parse-sig (syntax->list #'(A ...)))]
                    [R (parse-sig #'R)])
-       #'(proc: (A ... -> R)))]
+       (syntax/loc stx
+         (proc: (A ... -> R))))]
     [_ stx]))
 
 (define-for-syntax (parse-sigs stxs)
@@ -127,11 +121,8 @@
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
                    [sig-srcloc (syntax-srcloc #'S)]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(let ([s S]
-               [sig-src #'S]
-               [term-src #'term])
+       #'(let ([s S])
            (if (signature? s)
                (if (signature-ho? s)
                    (make-signature list?
@@ -161,12 +152,9 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
-                   [term stx]
                    [sig-srcloc (syntax-srcloc #'S)]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(let ([s S]
-               [sig-src #'S]
-               [term-src #'term])
+       #'(let ([s S])
            (if (signature? s)
                (if (signature-ho? s)
                    (make-signature vector?
