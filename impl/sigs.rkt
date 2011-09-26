@@ -55,7 +55,8 @@
                                         #f #f)]
                    [term-srcloc (syntax-srcloc stx)]
                    [(S ...) (parse-sigs #'(S ...))])
-       (with-syntax ([sig-name (datum->syntax #'sn
+       (with-syntax ([(S-srcloc ...) (map syntax-srcloc (syntax->list #'(S ...)))]
+                     [sig-name (datum->syntax #'sn
                                               (string->symbol
                                                (string-append
                                                 (symbol->string
@@ -81,21 +82,21 @@
                             (let ([wrapped-args
                                    (let loop ([sigs (list S ... )]
                                               [args (list f ...)]
-                                              [sig-srcs (syntax->list #'(S ...))]
+                                              [sig-srclocs (list S-srcloc ...)]
                                               [n 1])
                                      (if (null? sigs)
                                          '()
                                          (cons (wrap (car sigs) 
                                                      (car args)
-                                                     (car sig-srcs))
+                                                     (car sig-srclocs))
                                                (loop (cdr sigs) 
                                                      (cdr args)
-                                                     (cdr sig-srcs)
+                                                     (cdr sig-srclocs)
                                                      (add1 n)))))])
                               (apply cnstr wrapped-args)))]
                          [setters
                           (lambda (struct-inst new-val)
-                            (setters struct-inst (wrap S new-val #'S)))]
+                            (setters struct-inst (wrap S new-val S-srcloc)))]
                          ...)
                      (values names ...)))))
              ;; This could be a define below, but it's a define-values
@@ -109,13 +110,13 @@
 (define (raise-signature-violation msg srclocs)
   (raise (signature-violation msg (current-continuation-marks) srclocs)))
 
-(define (not-sig-error src)
-  (raise-signature-violation "not a valid signature" (syntax-srcloc src)))
+(define (not-sig-error srcloc)
+  (raise-signature-violation "not a valid signature" srcloc))
 
-(define (wrap sig val src)
+(define (wrap sig val srcloc)
   (if (signature? sig)
       ((signature-wrapper sig) val)
-      (not-sig-error src)))
+      (not-sig-error srcloc)))
 
 (provide Number$ String$ Char$ Boolean$ Any$ Sig: Listof: Vectorof:)
 
@@ -135,7 +136,7 @@
                (if (signature-ho? s)
                    (make-signature list?
                                    (lambda (v)
-                                     (map (lambda (e) (wrap s e sig-src)) v))
+                                     (map (lambda (e) (wrap s e sig-srcloc)) v))
                                    #t
                                    term-srcloc)
                    (let ([pred (lambda (v)
@@ -154,7 +155,7 @@
                                                 (list term-srcloc)))))
                                      #f
                                      term-srcloc)))
-               (not-sig-error sig-src))))]))
+               (not-sig-error sig-srcloc))))]))
 
 (define-syntax (Vectorof: stx)
   (syntax-case stx ()
@@ -171,7 +172,7 @@
                    (make-signature vector?
                                    (lambda (v)
                                      (list->vector
-                                      (map (lambda (e) (wrap s e sig-src))
+                                      (map (lambda (e) (wrap s e sig-srcloc))
                                            (vector->list v))))
                                    #t
                                    term-srcloc)
@@ -192,7 +193,7 @@
                                                 (list term-srcloc)))))
                                      #f
                                      term-srcloc)))
-               (not-sig-error sig-src))))]))
+               (not-sig-error sig-srcloc))))]))
 
 (define (first-order-sig pred? term-srcloc)
   (make-signature pred?
@@ -256,24 +257,28 @@
                    [(A ...) (parse-sigs #'(A ...))]
                    [R (parse-sig #'R)]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(make-signature
-          procedure?
-          (lambda (v)
-            (if (procedure? v)
-                (lambda (args ...)
-                  (wrap R (v (wrap A args #'A) ...) #'R))
-                (raise-signature-violation
-                 (format "not a procedure: ~e" v)
-                 (list term-srcloc))))
-          #t
-          term-srcloc))]))
+       (with-syntax ([(A-srcloc ...) 
+                      (map syntax-srcloc (syntax->list #'(A ...)))]
+                     [R-srcloc (syntax-srcloc #'R)])
+         #'(make-signature
+            procedure?
+            (lambda (v)
+              (if (procedure? v)
+                  (lambda (args ...)
+                    (wrap R (v (wrap A args A-srcloc) ...) R-srcloc))
+                  (raise-signature-violation
+                   (format "not a procedure: ~e" v)
+                   (list term-srcloc))))
+            #t
+            term-srcloc)))]))
 
 (define-syntax (define: stx)
   (syntax-case stx (: ->)
     [(_ id : S exp)
      (identifier? #'id)
      (with-syntax ([S (parse-sig #'S)])
-       #'(asl:define id (wrap S exp 'S)))]
+       (with-syntax ([S-srcloc (syntax-srcloc #'S)])
+         #'(asl:define id (wrap S exp S-srcloc))))]
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
@@ -284,71 +289,73 @@
     [(_ ([a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
+       (with-syntax ([(Sa-srcloc ...) (map syntax-srcloc (syntax->list #'(Sa ...)))]
+                     [Sr-srcloc (syntax-srcloc #'Sr)])
        #'(asl:lambda (a ...)
-                     (let ([a (wrap Sa a #'Sa)] ...)
-                       (wrap Sr exp #'Sr))))]))     
+                     (let ([a (wrap Sa a Sa-srcloc)] ...)
+                       (wrap Sr exp Sr-srcloc)))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(first-order-sig
-          (lambda (x)
-            (let loop ([sigs (list S ...)]
-                       [sig-srcs (syntax->list #'(S ...))])
-              (if (null? sigs)
-                  #f
-                  (let ([s (car sigs)])
-                    (if (signature? s)
-                        (if (signature-ho? s)
-                            (raise-signature-violation
-                             "or: cannot combine higher-order signature" 
-                             (list term-srcloc
-                                   (syntax-srcloc (signature-srcloc s))))
-                            (or ((signature-pred s) x)
-                                (loop (cdr sigs) (cdr sig-srcs))))
-                        (not-sig-error (car sig-srcs)))))))
-          term-srcloc))]))
+       (with-syntax ([(S-srcloc ...) 
+                      (map syntax-srcloc (syntax->list #'(S ...)))])
+         #'(first-order-sig
+            (lambda (x)
+              (let loop ([sigs (list S ...)]
+                         [sig-srclocs (list S-srcloc ...)])
+                (if (null? sigs)
+                    #f
+                    (let ([s (car sigs)])
+                      (if (signature? s)
+                          (if (signature-ho? s)
+                              (raise-signature-violation
+                               "or: cannot combine higher-order signature" 
+                               (list term-srcloc (signature-srcloc s)))
+                              (or ((signature-pred s) x)
+                                  (loop (cdr sigs) (cdr sig-srclocs))))
+                          (not-sig-error (car sig-srclocs)))))))
+            term-srcloc)))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(first-order-sig
-          (lambda (x)
-            (let loop ([sigs (list S ...)]
-                       [sig-srcs (syntax->list #'(S ...))])
-              (if (null? sigs)
-                  #t
-                  (let ([s (car sigs)])
-                    (if (signature? s)
-                        (if (signature-ho? s)
-                            (raise-signature-violation
-                             "and: cannot combine higher-order signature" 
-                             (list term-srcloc (syntax-srcloc (signature-srcloc s))))
-                            (and ((signature-pred s) x)
-                                 (loop (cdr sigs) (cdr sig-srcs))))
-                        (not-sig-error (car sig-srcs)))))))
-          term-srcloc))]))
+       (with-syntax ([(S-srcloc ...) (map syntax-srcloc (syntax->list #'(S ...)))])
+         #'(first-order-sig
+            (lambda (x)
+              (let loop ([sigs (list S ...)]
+                         [sig-srclocs (list S-srcloc ...)])
+                (if (null? sigs)
+                    #t
+                    (let ([s (car sigs)])
+                      (if (signature? s)
+                          (if (signature-ho? s)
+                              (raise-signature-violation
+                               "and: cannot combine higher-order signature" 
+                               (list term-srcloc (signature-srcloc s)))
+                              (and ((signature-pred s) x)
+                                   (loop (cdr sigs) (cdr sig-srclocs))))
+                          (not-sig-error (car sig-srclocs)))))))
+            term-srcloc)))]))
 
 (define-syntax (not: stx)
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
-       #'(let ([s S]
-               [sig-src #'S]
-               [term-src #'term])
-           (if (signature? s)
-               (if (signature-ho? s)
-                   (raise-signature-violation
-                    "not: cannot negate higher-order signature" 
-                    (list term-srcloc))
-                   (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-srcloc))
-               (not-sig-error sig-src))))]))
+       (with-syntax ([sig-srcloc(syntax-srcloc #'S)])
+         #'(let ([s S])
+             (if (signature? s)
+                 (if (signature-ho? s)
+                     (raise-signature-violation
+                      "not: cannot negate higher-order signature" 
+                      (list term-srcloc))
+                     (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-srcloc))
+                 (not-sig-error sig-srcloc)))))]))
 
 #|
 (provide : defvar:)
