@@ -268,7 +268,8 @@
      (identifier? #'id)
      (with-syntax ([S (parse-sig #'S)])
        (with-syntax ([S-srcloc (syntax-srcloc #'S)])
-         #'(asl:define id (wrap S exp S-srcloc))))]
+         #`(asl:define id #,(syntax/loc stx
+                              (wrap S exp S-srcloc)))))]
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
@@ -284,9 +285,10 @@
        (with-syntax ([(Sa-srcloc ...) (map syntax-srcloc (syntax->list #'(Sa ...)))]
                      [Sr-srcloc (syntax-srcloc #'Sr)])
        #`(asl:lambda (a ...)
-                     (let ([a (wrap Sa a Sa-srcloc)] ...)
-                       #,(syntax/loc stx
-                           (wrap Sr exp Sr-srcloc))))))]))     
+                     #,(quasisyntax/loc stx
+                         (let ([a (wrap Sa a Sa-srcloc)] ...)
+                           #,(syntax/loc stx
+                               (wrap Sr exp Sr-srcloc)))))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
