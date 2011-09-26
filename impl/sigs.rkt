@@ -54,6 +54,7 @@
                                         (syntax->list #'(f ...)) 
                                         #f #f)]
                    [term stx]
+                   [term-srcloc (syntax-srcloc stx)]
                    [(S ...) (parse-sigs #'(S ...))])
        (with-syntax ([sig-name (datum->syntax #'sn
                                               (string->symbol
@@ -103,7 +104,7 @@
              ;; thread, 2011-09-03, "splicing into local".  Should not
              ;; be necessary with next release.
              (define-values (sig-name) 
-               (first-order-sig pred #'term)))))]))
+               (first-order-sig pred term-srcloc)))))]))
 
 
 (define (raise-signature-violation msg srclocs)
@@ -194,55 +195,56 @@
                                      term-srcloc)))
                (not-sig-error sig-src))))]))
 
-(define (first-order-sig pred? term-src)
+(define (first-order-sig pred? term-srcloc)
   (make-signature pred?
                   (lambda (v)
                     (if (pred? v)
                         v
                         (raise-signature-violation
                          (format "value ~a failed the signature" v)
-                         (list (syntax-srcloc term-src)))))
+                         (list term-srcloc))))
                   #f
-                  (syntax-srcloc term-src)))
+                  term-srcloc))
 
 (define-syntax (Sig: stx)
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([Sp (parse-sig #'S)]
-                   [term stx])
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        (if (eq? #'Sp #'S) ;; currently means S is NOT (... -> ...)
-           #'(first-order-sig S #'term)
+           #'(first-order-sig S term-srcloc)
            #'Sp))]))
 
 (define-syntax (Number$ stx)
   (syntax-case stx (Number$)
     [Number$
-     (with-syntax ([term stx])
-       #'(first-order-sig number? #'term))]))
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig number? term-srcloc))]))
 
 (define-syntax (String$ stx)
   (syntax-case stx (String$)
     [String$
-     (with-syntax ([term stx])
-       #'(first-order-sig string? #'term))]))
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig string? term-srcloc))]))
 
 (define-syntax (Char$ stx)
   (syntax-case stx (char$)
     [Char$
-     (with-syntax ([term stx])
-       #'(first-order-sig char? #'term))]))
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig char? term-srcloc))]))
 
 (define-syntax (Boolean$ stx)
   (syntax-case stx (Boolean$)
     [Boolean$
-     (with-syntax ([term stx])
-       #'(first-order-sig boolean? #'term))]))
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig boolean? term-srcloc))]))
 
 (define-syntax (Any$ stx)
   (syntax-case stx (Any$)
     [Any$
-     (with-syntax ([term stx])
-       #'(first-order-sig (lambda (_) #t) #'term))]))
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig (lambda (_) #t) term-srcloc))]))
 
 ;; proc: is for internal use only.
 ;; Stand-alone procedural signatures are defined using Sig:; e.g.,
@@ -311,7 +313,7 @@
                             (or ((signature-pred s) x)
                                 (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
-          #'term))]))
+          term-srcloc))]))
 
 (define-syntax (and: stx)
   (syntax-case stx ()
@@ -334,7 +336,7 @@
                             (and ((signature-pred s) x)
                                  (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
-          #'term))]))
+          term-srcloc))]))
 
 (define-syntax (not: stx)
   (syntax-case stx ()
@@ -350,7 +352,7 @@
                    (raise-signature-violation
                     "not: cannot negate higher-order signature" 
                     (list term-srcloc))
-                   (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-src))
+                   (first-order-sig (lambda (x) (not ((signature-pred s) x))) term-srcloc))
                (not-sig-error sig-src))))]))
 
 #|
