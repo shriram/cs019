@@ -119,7 +119,7 @@
 
 (provide Number$ String$ Char$ Boolean$ Any$ Sig: Listof: Vectorof:)
 
-(define-struct signature (pred wrapper ho? src))
+(define-struct signature (pred wrapper ho? srcloc))
 
 (define-syntax (Listof: stx)
   (syntax-case stx ()
@@ -137,7 +137,7 @@
                                    (lambda (v)
                                      (map (lambda (e) (wrap s e sig-src)) v))
                                    #t
-                                   term-src)
+                                   term-srcloc)
                    (let ([pred (lambda (v)
                                  (and (list? v)
                                       (andmap (signature-pred s) v)))])
@@ -151,9 +151,9 @@
                                                 (list sig-srcloc))
                                                (raise-signature-violation
                                                 (format "not a list: ~e" v)
-                                                (list term-src)))))
+                                                (list term-srcloc)))))
                                      #f
-                                     term-src)))
+                                     term-srcloc)))
                (not-sig-error sig-src))))]))
 
 (define-syntax (Vectorof: stx)
@@ -174,7 +174,7 @@
                                       (map (lambda (e) (wrap s e sig-src))
                                            (vector->list v))))
                                    #t
-                                   term-src)
+                                   term-srcloc)
                    (let ([pred (lambda (v)
                                  (and (vector? v)
                                       (andmap (signature-pred s)
@@ -191,7 +191,7 @@
                                                 (format "not a vector: ~e" v)
                                                 (list term-srcloc)))))
                                      #f
-                                     term-src)))
+                                     term-srcloc)))
                (not-sig-error sig-src))))]))
 
 (define (first-order-sig pred? term-src)
@@ -203,7 +203,7 @@
                          (format "value ~a failed the signature" v)
                          (list (syntax-srcloc term-src)))))
                   #f
-                  term-src))
+                  term-srcloc))
 
 (define-syntax (Sig: stx)
   (syntax-case stx ()
@@ -307,7 +307,7 @@
                             (raise-signature-violation
                              "or: cannot combine higher-order signature" 
                              (list term-srcloc
-                                   (syntax-srcloc (signature-src s))))
+                                   (syntax-srcloc (signature-srcloc s))))
                             (or ((signature-pred s) x)
                                 (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
@@ -330,7 +330,7 @@
                         (if (signature-ho? s)
                             (raise-signature-violation
                              "and: cannot combine higher-order signature" 
-                             (list term-srcloc (syntax-srcloc (signature-src s))))
+                             (list term-srcloc (syntax-srcloc (signature-srcloc s))))
                             (and ((signature-pred s) x)
                                  (loop (cdr sigs) (cdr sig-srcs))))
                         (not-sig-error (car sig-srcs)))))))
