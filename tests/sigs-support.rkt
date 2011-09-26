@@ -4,6 +4,8 @@
 
 ;; Provides the form check-violation-highlights to see if
 ;; some expression raises highlights around the expected syntax.
+;; Also takes in a list of the column where the syntax starts to
+;; highlight.
 
 (require "../impl/sigs.rkt"
          (only-in racket/base 
@@ -28,11 +30,20 @@
 
 (define-syntax (check-violation-highlights stx)
   (syntax-case stx ()
-    [(_ body expected-highlights)
-     (syntax/loc stx
-       (check-expect (map get-text-at-srcloc
-                          (signature-violation-srclocs
-                           (with-handlers 
-                               ([signature-violation? (lambda (exn) exn)])
-                             body)))
-                     expected-highlights))]))
+    [(_ body expected-highlights expected-columns)
+     (quasisyntax/loc stx
+       (begin
+         #,(syntax/loc #'expected-highlights
+             (check-expect (map get-text-at-srcloc
+                                (signature-violation-srclocs
+                                 (with-handlers 
+                                     ([signature-violation? (lambda (exn) exn)])
+                                   body)))
+                           expected-highlights))
+         #,(syntax/loc #'expected-columns
+             (check-expect (map (lambda (v) (vector-ref v 2))
+                                (signature-violation-srclocs
+                                 (with-handlers 
+                                     ([signature-violation? (lambda (exn) exn)])
+                                   body)))
+                           expected-columns))))]))
