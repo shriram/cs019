@@ -53,7 +53,6 @@
                     (build-struct-names #'sn
                                         (syntax->list #'(f ...)) 
                                         #f #f)]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)]
                    [(S ...) (parse-sigs #'(S ...))])
        (with-syntax ([sig-name (datum->syntax #'sn
@@ -210,7 +209,6 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([Sp (parse-sig #'S)]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
        (if (eq? #'Sp #'S) ;; currently means S is NOT (... -> ...)
            #'(first-order-sig S term-srcloc)
@@ -257,7 +255,6 @@
      (with-syntax ([(args ...) (generate-temporaries #'(A ...))]
                    [(A ...) (parse-sigs #'(A ...))]
                    [R (parse-sig #'R)]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
        #'(make-signature
           procedure?
@@ -269,7 +266,7 @@
                  (format "not a procedure: ~e" v)
                  (list term-srcloc))))
           #t
-          #'term))]))
+          term-srcloc))]))
 
 (define-syntax (define: stx)
   (syntax-case stx (: ->)
@@ -295,7 +292,6 @@
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
        #'(first-order-sig
           (lambda (x)
@@ -319,7 +315,6 @@
   (syntax-case stx ()
     [(_ S ...)
      (with-syntax ([(S ...) (parse-sigs #'(S ...))]
-                   [term stx]
                    [term-srcloc (syntax-srcloc stx)])
        #'(first-order-sig
           (lambda (x)
@@ -342,11 +337,11 @@
   (syntax-case stx ()
     [(_ S)
      (with-syntax ([S (parse-sig #'S)]
-                   [term stx])
+                   [term stx]
+                   [term-srcloc (syntax-srcloc stx)])
        #'(let ([s S]
                [sig-src #'S]
-               [term-src #'term]
-               [term-srcloc (syntax-srcloc #'term)])
+               [term-src #'term])
            (if (signature? s)
                (if (signature-ho? s)
                    (raise-signature-violation
