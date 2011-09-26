@@ -9,6 +9,14 @@
 
 (provide define: lambda: define-struct: and: or: not:)
 
+
+(define-struct (signature-violation exn:fail) (srclocs)
+  #:property prop:exn:srclocs
+  (lambda (violation)
+    (signature-violation-srclocs violation)))
+
+
+
 (define-for-syntax (parse-sig stx)
   (syntax-case stx (->)
     [(A ... -> R)
