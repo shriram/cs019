@@ -203,7 +203,7 @@
                          (format "value ~a failed the signature" v)
                          (list (syntax-srcloc term-src)))))
                   #f
-                  term-srcloc))
+                  (syntax-srcloc term-src)))
 
 (define-syntax (Sig: stx)
   (syntax-case stx ()
