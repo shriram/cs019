@@ -1,11 +1,11 @@
 #lang racket/base
 
-(require (only-in lang/htdp-advanced [define asl:define] [lambda asl:lambda]))
-(require [for-syntax syntax/parse]
-         [for-syntax syntax/struct])
-(require syntax/struct)
-(require [for-syntax racket])
-(require racket/bool racket/list)
+(require (only-in lang/htdp-advanced 
+                  [define asl:define] 
+                  [lambda asl:lambda]))
+(require [for-syntax syntax/struct]
+         [for-syntax racket])
+
 
 (provide define: lambda: define-struct: and: or: not:)
 
@@ -57,14 +57,14 @@
                                               [args (list f ...)]
                                               [sig-srcs (syntax->list #'(S ...))]
                                               [n 1])
-                                     (if (empty? sigs)
-                                         empty
-                                         (cons (wrap (first sigs) 
-                                                     (first args)
-                                                     (first sig-srcs))
-                                               (loop (rest sigs) 
-                                                     (rest args)
-                                                     (rest sig-srcs)
+                                     (if (null? sigs)
+                                         '()
+                                         (cons (wrap (car sigs) 
+                                                     (car args)
+                                                     (car sig-srcs))
+                                               (loop (cdr sigs) 
+                                                     (cdr args)
+                                                     (cdr sig-srcs)
                                                      (add1 n)))))])
                               (apply cnstr wrapped-args)))]
                          [setters
@@ -104,7 +104,7 @@
                    (make-signature list?
                                    (lambda (v)
                                      (map (lambda (e) (wrap s e sig-src)) v))
-                                   true
+                                   #t
                                    term-src)
                    (let ([pred (lambda (v)
                                  (and (list? v)
@@ -126,7 +126,7 @@
                                                 v
                                                 #f
                                                 (list term-src)))))
-                                     false
+                                     #f
                                      term-src)))
                (not-sig-error sig-src))))]))
 
@@ -145,7 +145,7 @@
                                      (list->vector
                                       (map (lambda (e) (wrap s e sig-src))
                                            (vector->list v))))
-                                   true
+                                   #t
                                    term-src)
                    (let ([pred (lambda (v)
                                  (and (vector? v)
@@ -168,7 +168,7 @@
                                                 v
                                                 #f
                                                 (list term-src)))))
-                                     false
+                                     #f
                                      term-src)))
                (not-sig-error sig-src))))]))
 
@@ -183,7 +183,7 @@
                          #f
                          #f
                          (list term-src))))
-                  false
+                  #f
                   term-src))
 
 (define-syntax (Sig: stx)
@@ -218,12 +218,12 @@
     [Boolean$
      (with-syntax ([term stx])
        #'(first-order-sig boolean? #'term))]))
-                                              
+
 (define-syntax (Any$ stx)
   (syntax-case stx (Any$)
     [Any$
      (with-syntax ([term stx])
-       #'(first-order-sig (lambda (_) true) #'term))]))
+       #'(first-order-sig (lambda (_) #t) #'term))]))
 
 ;; proc: is for internal use only.
 ;; Stand-alone procedural signatures are defined using Sig:; e.g.,
@@ -249,7 +249,7 @@
                  v
                  #f
                  (list #'term))))
-          true
+          #t
           #'term))]))
 
 (define-syntax (define: stx)
@@ -281,9 +281,9 @@
           (lambda (x)
             (let loop ([sigs (list S ...)]
                        [sig-srcs (syntax->list #'(S ...))])
-              (if (empty? sigs)
-                  false
-                  (let ([s (first sigs)])
+              (if (null? sigs)
+                  #f
+                  (let ([s (car sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
                             (raise-syntax-error
@@ -293,8 +293,8 @@
                              #f
                              (list (signature-src s)))
                             (or ((signature-pred s) x)
-                                (loop (rest sigs) (rest sig-srcs))))
-                        (not-sig-error (first sig-srcs)))))))
+                                (loop (cdr sigs) (cdr sig-srcs))))
+                        (not-sig-error (car sig-srcs)))))))
           #'term))]))
 
 (define-syntax (and: stx)
@@ -306,9 +306,9 @@
           (lambda (x)
             (let loop ([sigs (list S ...)]
                        [sig-srcs (syntax->list #'(S ...))])
-              (if (empty? sigs)
-                  true
-                  (let ([s (first sigs)])
+              (if (null? sigs)
+                  #t
+                  (let ([s (car sigs)])
                     (if (signature? s)
                         (if (signature-ho? s)
                             (raise-syntax-error
@@ -318,8 +318,8 @@
                              #f
                              (list (signature-src s)))
                             (and ((signature-pred s) x)
-                                 (loop (rest sigs) (rest sig-srcs))))
-                        (not-sig-error (first sig-srcs)))))))
+                                 (loop (cdr sigs) (cdr sig-srcs))))
+                        (not-sig-error (car sig-srcs)))))))
           #'term))]))
 
 (define-syntax (not: stx)
