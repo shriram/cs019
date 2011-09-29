@@ -106,7 +106,7 @@
   (raise (signature-violation msg (current-continuation-marks) srclocs)))
 
 (define (not-sig-error srcloc)
-  (raise-signature-violation "not a valid signature" srcloc))
+  (raise-signature-violation "not a valid signature" (list srcloc)))
 
 (define (wrap sig val srcloc)
   (if (signature? sig)
