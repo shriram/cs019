@@ -67,7 +67,7 @@
                      [pred (syntax-case #'(names ...) ()
                              [(struct:name-id const predicate misc ...)
                               #'predicate])])
-         #`(begin
+         #'(begin
              (define-values (names ...)
                (let ()
                  (begin
@@ -249,13 +249,12 @@
        (with-syntax ([(A-srcloc ...) 
                       (map syntax-srcloc (syntax->list #'(A ...)))]
                      [R-srcloc (syntax-srcloc #'R)])
-         #`(make-signature
+         #'(make-signature
             procedure?
             (lambda (v)
               (if (procedure? v)
                   (lambda (args ...)
-                    #,(quasisyntax/loc stx
-                        (wrap R #,(syntax/loc stx (v (wrap A args A-srcloc) ...)) R-srcloc)))
+                    (wrap R (v (wrap A args A-srcloc) ...) R-srcloc))
                   (raise-signature-violation
                    (format "not a procedure: ~e" v)
                    (list term-srcloc))))
@@ -268,14 +267,11 @@
      (identifier? #'id)
      (with-syntax ([S (parse-sig #'S)])
        (with-syntax ([S-srcloc (syntax-srcloc #'S)])
-         #`(asl:define id #,(syntax/loc stx
-                              (wrap S exp S-srcloc)))))]
+         #'(asl:define id (wrap S exp S-srcloc))))]
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
-       #`(asl:define f 
-                     #,(syntax/loc stx
-                         (lambda: ([a : Sa] ...) -> Sr exp))))]))
+       #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp)))]))
 
 (define-syntax (lambda: stx)
   (syntax-case stx (: ->)
@@ -284,11 +280,9 @@
                    [Sr (parse-sig #'Sr)])
        (with-syntax ([(Sa-srcloc ...) (map syntax-srcloc (syntax->list #'(Sa ...)))]
                      [Sr-srcloc (syntax-srcloc #'Sr)])
-       #`(asl:lambda (a ...)
-                     #,(quasisyntax/loc stx
-                         (let ([a (wrap Sa a Sa-srcloc)] ...)
-                           #,(syntax/loc stx
-                               (wrap Sr exp Sr-srcloc)))))))]))     
+       #'(asl:lambda (a ...)
+                     (let ([a (wrap Sa a Sa-srcloc)] ...)
+                       (wrap Sr exp Sr-srcloc)))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
