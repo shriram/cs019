@@ -26,13 +26,13 @@
         [else (ph val basic sub)]))))
   (use-named/undefined-handler
    (lambda (x)
-     (and (memq 'use-function-output-syntax options)
-          (procedure? x)
-          (object-name x))))
-  (named/undefined-handler
-   (lambda (x)
-     (string->symbol
-      (format "function:~a" (object-name x)))))
+     #f #;(and (memq 'use-function-output-syntax options)
+            (procedure? x)
+            (object-name x))))
+  #;(named/undefined-handler
+     (lambda (x)
+       (string->symbol
+        (format "function:~a" (object-name x)))))
   ;; Set pretty-print options:
   (pretty-print-show-inexactness #t)
   (pretty-print-exact-as-decimal #t)
