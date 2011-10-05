@@ -63,7 +63,7 @@ that the spaces around the colons are required, not optional:
 This is identical to (define <var> <expr>), except the value is
 checked by <sig>.
 
-  (define: (<id> ([<id> : <sig>] ...)) -> <sig>
+  (define: (<id> [<id> : <sig>] ...) -> <sig>
     <expr>)
 
 This is identical to (define (<id> <id> ...) <expr>), except the
@@ -90,6 +90,8 @@ There are several built-in signatures and signature-makers:
         | Char$
         | Boolean$
         | Image$
+	| Posn$
+	| Key$
         | Any$
 
 The basic signatures correspond to the primitive predicate (Number$ ->
