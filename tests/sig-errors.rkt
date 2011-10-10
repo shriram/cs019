@@ -34,7 +34,7 @@
 (define: (n [l : (Listof: (Number$ -> Number$))]) -> (Listof: Number$)
   (map (lambda (f) (f 10)) l))
 ;(n (list add1 number->string))
-;(check-error (n (list add1 string->number)))
+(check-error (n (list add1 string->number)))
 
 (define: (vf [v : (Vectorof: Number$)]) -> Number$
   (vector-ref v 0))

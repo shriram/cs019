@@ -1,5 +1,10 @@
 MISSING LANGUAGE:
 
+- (define: (n [l : (Listof: (Number$ -> Number$))]) -> (Listof: Number$)
+    (map (lambda (f) (f 10)) l))
+  (n (list add1 number->string))
+  highlights the Number$ in return position and says
+  "value 10 failed the signature" -- wtf?
 - how did this happen?
   (define n->n$ (Sig: (Number$ -> Number$)))
   (define: f : n->n$ add1)
