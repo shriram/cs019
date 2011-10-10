@@ -332,3 +332,15 @@
     (iter ns)))
 (check-expect (cvts empty) empty)
 (check-expect (cvts (list 0 1 0 0)) (list "0" "1" "0" "0"))
+
+
+
+
+(define S (or: 2 3))
+(check-error (local [(define: v : S 4)]
+               v))
+(check-violation-highlights
+ (local [(define: v : S 4)]
+   v)
+ (list "2")
+ (list 15))

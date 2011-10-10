@@ -157,3 +157,40 @@
                                                   (make-MtNode)
                                                   (make-Node 5 empty)))
                                (make-Node 5 empty))))
+
+
+
+
+;; Functions should print as (lambda (a1 a2) ..)
+(require (only-in racket/base open-output-string get-output-string))
+(check-expect (local ([define op (open-output-string)])
+                     (begin (print (lambda (x) x) op)
+                            (get-output-string op)))
+              "(lambda (a1) ...)")
+(check-expect (local ([define op (open-output-string)])
+                     (begin (print (lambda (x y z) x) op)
+                            (get-output-string op)))
+              "(lambda (a1 a2 a3) ...)")
+(check-expect (local ([define (my-function x) x]
+                      [define op (open-output-string)])
+                     (begin (print my-function op)
+                            (get-output-string op)))
+              "(lambda (a1) ...)")
+;; Primitives still print as themselves.
+(check-expect (local ([define op (open-output-string)])
+                     (begin (print + op)
+                            (get-output-string op)))
+              "+")
+;; Signatured functions should also print similarly.
+(check-expect (local [(define n->n$ (Sig: (Number$ -> Number$)))
+                      (define: f : n->n$ add1)
+                      (define op (open-output-string))]
+                 (begin (print f op)
+                        (get-output-string op)))
+              "(lambda (a1) ...)")
+(check-expect (local [(define n->n$ (Sig: (Number$ Number$ -> Number$)))
+                      (define: f : n->n$ +)
+                      (define op (open-output-string))]
+                 (begin (print f op)
+                        (get-output-string op)))
+              "(lambda (a1 a2) ...)")
