@@ -52,6 +52,11 @@
 ;(s2n "x")
 ;(define: s2n>> : (String$ ->> Number$) string->number)
 
+(define-struct: holds-num ([n : Number$]))
+(check-error (make-holds-num "x"))
+(define v (make-holds-num 3))
+(check-error (set-holds-num-n! v "x"))
+
 (define Tree$ (or: mt$ nd$))
 (define-struct mt ())
 (define mt$ (Sig: mt?))
