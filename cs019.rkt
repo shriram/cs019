@@ -6,6 +6,7 @@
  (prefix-in 
   asl: 
   (except-in lang/htdp-advanced 
+             first rest second ;third fourth fifth sixth seventh eighth rest
              image? require #%module-begin
              signature : Number Real Rational Integer Natural
              Boolean True False String Empty-list Any Property 
@@ -17,6 +18,9 @@
                               (regexp-replace #rx"^asl:" name "")))
                        (all-from-out lang/htdp-advanced)))
 (provide (rename-out (top-level #%module-begin)))
+
+(require "impl/lists.rkt")
+(provide [all-from-out "impl/lists.rkt"])
 
 (define Posn$ (Sig: asl:posn?))
 (provide Posn$)
