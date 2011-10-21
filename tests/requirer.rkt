@@ -8,3 +8,12 @@
 (check-error (make-h "1" "x"))
 (check-expect (only-positive-add1 5) 6)
 (check-error (only-positive-add1 -1))
+(check-expect (match (make-h 3 "x")
+                [(struct h (n _)) n])
+              3)
+(check-expect
+ (shared ([H (make-h N S)]
+          [N 3]
+          [S "X"])
+   H)
+ (make-h 3 "X"))
