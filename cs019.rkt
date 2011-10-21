@@ -6,7 +6,7 @@
  (prefix-in 
   asl: 
   (except-in lang/htdp-advanced 
-             first rest second ;third fourth fifth sixth seventh eighth rest
+             first rest second third fourth fifth sixth seventh eighth
              image? require #%module-begin
              signature : Number Real Rational Integer Natural
              Boolean True False String Empty-list Any Property 

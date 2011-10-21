@@ -20,10 +20,10 @@ and provide these instead.
 (define second cadr)
 (define third caddr)
 (define fourth cadddr)
-(define (fifth l) (list-ref l 5))
-(define (sixth l) (list-ref l 6))
-(define (seventh l) (list-ref l 7))
-(define (eighth l) (list-ref l 8))
+(define (fifth l) (list-ref l 4))
+(define (sixth l) (list-ref l 5))
+(define (seventh l) (list-ref l 6))
+(define (eighth l) (list-ref l 7))
 
-(provide first rest second) ;third fourth fifth sixth seventh eighth)
+(provide first rest second third fourth fifth sixth seventh eighth)
 
