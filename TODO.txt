@@ -6,10 +6,6 @@ MISSING LANGUAGE:
   > f
   (lambda (a1) ...)
 - add parameterized signatures (esp for structs)
-- bizarre parse:
-  (define: s2n>> : (String$ ->> Number$) string->number)
-  results in
-  signature-violation: value #<procedure:string->number> failed the signature in: (Sig: string?)
 
 - test against last year's code
 
