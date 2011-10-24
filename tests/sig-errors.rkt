@@ -34,7 +34,7 @@
 (define: (n [l : (Listof: (Number$ -> Number$))]) -> (Listof: Number$)
   (map (lambda (f) (f 10)) l))
 ;(n (list add1 number->string))
-;(check-error (n (list add1 string->number)))
+(check-error (n (list add1 string->number)))
 
 (define: (vf [v : (Vectorof: Number$)]) -> Number$
   (vector-ref v 0))
@@ -51,6 +51,11 @@
 (define: s2n : (String$ -> Number$) string->number)
 ;(s2n "x")
 ;(define: s2n>> : (String$ ->> Number$) string->number)
+
+(define-struct: holds-num ([n : Number$]))
+(check-error (make-holds-num "x"))
+(define v (make-holds-num 3))
+(check-error (set-holds-num-n! v "x"))
 
 (define Tree$ (or: mt$ nd$))
 (define-struct mt ())

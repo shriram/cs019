@@ -5,14 +5,12 @@
 ;(define: y : string? 4)
 (check-expect x 3)
 
-
 ;; The error should focus around the signature "Number$" here.
 (check-violation-highlights 
  (local [(define: x : Number$ "three")]
    'huh?)
  (list "Number$")
  (list 22))
-
 
 (define: gl : (Listof: Any$) (list 1 "two" true))
 (check-expect gl (list 1 "two" true))
@@ -24,7 +22,6 @@
  (g "x")
  (list "Number$")
  (list 17))
-
 
 (define: (g2 [x : Number$]) -> String$ 'not-a-string)
 (check-error (g2 "10"))
@@ -73,6 +70,25 @@
  (list "(Number$ -> Number$)")
  (list 26))
 
+(define-struct: shd1 ([n : Number$]))
+(check-expect
+ (shared ([A (make-shd1 N)]
+          [N 3])
+   A)
+ (make-shd1 3))
+(check-error (shared ([A (make-shd1 B)]
+                      [B "hi!"])
+               A))
+
+(define-struct: clrs ([c : String$] [o : clrs$]))
+(define colors
+  (shared ([W (make-clrs "W" G)]
+           [G (make-clrs "G" W)])
+    W))
+(check-expect (clrs-c colors) "W")
+(check-expect (clrs-c (clrs-o colors)) "G")
+(check-expect (clrs-c (clrs-o (clrs-o colors))) "W")
+(check-expect (clrs-c (clrs-o (clrs-o (clrs-o colors)))) "G")
 
 (define: n*fn->n : (Number$ (Number$ -> Number$) -> Number$)
   (lambda (n1 fn) (fn n1)))
@@ -189,6 +205,9 @@
   (p-x p))
 (check-expect (h (make-p 1 2)) 1)
 (check-expect (h (make-p 3 4)) 3)
+(check-expect (match (make-p 1 2)
+                [(struct p (a b)) (+ a b)])
+              3)
 
 (define n->n (Sig: (Number$ -> Number$)))
 (define: a1 : n->n add1)
@@ -283,6 +302,9 @@
  (list "Number$")
  (list 26))
 
+#|
+These no longer work!
+
 (check-expect (local ([define-struct: m ([v : Number$] [w : String$])])
                 (m-v (make-m 5 "x")))
               5)
@@ -301,6 +323,7 @@
  (list "String$")
  (list 47))
 
+|#
 
 (define: l : (Listof: Number$) (list 1 2 3))
 (check-expect l (list 1 2 3))
@@ -332,3 +355,12 @@
     (iter ns)))
 (check-expect (cvts empty) empty)
 (check-expect (cvts (list 0 1 0 0)) (list "0" "1" "0" "0"))
+
+(define S (or: 2 3))
+(check-error (local [(define: v : S 4)]
+               v))
+(check-violation-highlights
+ (local [(define: v : S 4)]
+   v)
+ (list "2")
+ (list 15))

@@ -1,15 +1,19 @@
 #lang racket/base
 
+#;(require (only-in racket/base
+                  [define-struct racket:define-struct]))
 (require (only-in lang/htdp-advanced 
+                  local
                   [define asl:define] 
                   [lambda asl:lambda]))
 (require [for-syntax syntax/struct]
          [for-syntax racket])
-
+(require racket/bool racket/list)
 
 (provide define: lambda: define-struct: and: or: not:
          (struct-out signature-violation))
 
+(define the-undefined-value (letrec ([x x]) x))
 
 (define-struct (signature-violation exn:fail) 
   (srclocs)  ;; listof srcloc-vector
@@ -45,9 +49,12 @@
   (syntax-case stx (:)
     [(_ sn ([f : S] ...))
      (with-syntax ([(names ...) 
-                    (build-struct-names #'sn
-                                        (syntax->list #'(f ...)) 
-                                        #f #f)]
+                    (map (lambda (i)
+                           (datum->syntax stx i))
+                         (map syntax->datum
+                              (build-struct-names #'sn
+                                                  (syntax->list #'(f ...)) 
+                                                  #f #f)))]
                    [term-srcloc (syntax-srcloc stx)]
                    [(S ...) (parse-sigs #'(S ...))])
        (with-syntax ([(S-srcloc ...) (map syntax-srcloc (syntax->list #'(S ...)))]
@@ -57,60 +64,84 @@
                                                 (symbol->string
                                                  (syntax->datum #'sn))
                                                 "$")))]
-                     [cnstr (syntax-case #'(names ...) ()
-                              [(struct:name-id constructor misc ...)
-                               #'constructor])]
-                     [(_sid _ctr _id? setters ...)
-                      (build-struct-names #'sn
-                                          (syntax->list #'(f ...))
-                                          #t #f)]
-                     [pred (syntax-case #'(names ...) ()
-                             [(struct:name-id const predicate misc ...)
-                              #'predicate])])
-         #`(begin
+                     [(cnstr pred get/set! ...)
+                      (syntax-case #'(names ...) ()
+                        [(_s:id constructor predicate? getters/setters! ...)
+                         #'(constructor predicate? getters/setters! ...)])])
+         (with-syntax ([(setters ...) (let loop ([g/s! (syntax->list #'(get/set! ...))])
+                                        (if (empty? g/s!) 
+                                            empty
+                                            (cons (second g/s!)
+                                                  (loop (rest (rest g/s!))))))])
+#|
+This expansion used to use 
+         #'(begin
              (define-values (names ...)
                (let ()
                  (begin
                    (define-struct sn (f ...) #:transparent #:mutable)
                    (let ([cnstr 
                           (lambda (f ...)
-                            (let ([wrapped-args
-                                   (let loop ([sigs (list S ... )]
-                                              [args (list f ...)]
-                                              [sig-srclocs (list S-srcloc ...)]
-                                              [n 1])
-                                     (if (null? sigs)
-                                         '()
-                                         (cons (wrap (car sigs) 
-                                                     (car args)
-                                                     (car sig-srclocs))
-                                               (loop (cdr sigs) 
-                                                     (cdr args)
-                                                     (cdr sig-srclocs)
-                                                     (add1 n)))))])
+                            (let ([wrapped-args ETC])
                               (apply cnstr wrapped-args)))]
-                         [setters
-                          (lambda (struct-inst new-val)
-                            (setters struct-inst (wrap S new-val S-srcloc)))]
+                         [setters ETC]
                          ...)
                      (values names ...)))))
-             ;; This could be a define below, but it's a define-values
-             ;; due to a bug in ISL's local.  See users@racket-lang.org
-             ;; thread, 2011-09-03, "splicing into local".  Should not
-             ;; be necessary with next release.
-             (define-values (sig-name) 
-               (first-order-sig pred term-srcloc)))))]))
-
+        ETC.
+It does not because that fails with shared:
+(define-struct: foo ([n : Number$]))
+(shared ([f (make-foo A)]
+         [A 3])
+  f)
+produces (make-foo #<undefined>) rather than (make-foo 3).
+The version below, which mutates the setters, does not suffer from this.
+|#
+           #'(begin
+               (define-struct sn (f ...) #:transparent #:mutable)
+               (define dummy
+                 (set! cnstr
+                       (let ([prim-cnstr cnstr])
+                         (lambda (f ...)
+                           (let ([wrapped-args
+                                  (let loop ([sigs (list S ... )]
+                                             [args (list f ...)]
+                                             [sig-srclocs (list S-srcloc ...)]
+                                             [n 1])
+                                    (if (null? sigs)
+                                        '()
+                                        (cons (wrap (car sigs) 
+                                                    (car args)
+                                                    (car sig-srclocs))
+                                              (loop (cdr sigs) 
+                                                    (cdr args)
+                                                    (cdr sig-srclocs)
+                                                    (add1 n)))))])
+                             (apply prim-cnstr wrapped-args))))))
+               (define more-dummies
+                 (list
+                  (set! setters
+                        (let ([prim-setter setters])
+                          (lambda (struct-inst new-val)
+                            (prim-setter struct-inst (wrap S new-val S-srcloc)))))
+                  ...))
+               ;; This could be a define below, but it's a define-values
+               ;; due to a bug in ISL's local.  See users@racket-lang.org
+               ;; thread, 2011-09-03, "splicing into local".  Should not
+               ;; be necessary with next release.
+               (define-values (sig-name) 
+                 (first-order-sig pred #'term))))))]))
 
 (define (raise-signature-violation msg srclocs)
   (raise (signature-violation msg (current-continuation-marks) srclocs)))
 
 (define (not-sig-error srcloc)
-  (raise-signature-violation "not a valid signature" srcloc))
+  (raise-signature-violation "not a valid signature" (list srcloc)))
 
 (define (wrap sig val srcloc)
   (if (signature? sig)
-      ((signature-wrapper sig) val)
+      (if (eq? val the-undefined-value)
+          val
+          ((signature-wrapper sig) val))
       (not-sig-error srcloc)))
 
 (provide Number$ String$ Char$ Boolean$ Any$ Sig: Listof: Vectorof:)
@@ -190,7 +221,7 @@
                     (if (pred? v)
                         v
                         (raise-signature-violation
-                         (format "value ~a failed the signature" v)
+                         (format "value ~s failed the signature" v)
                          (list term-srcloc))))
                   #f
                   term-srcloc))
@@ -249,13 +280,12 @@
        (with-syntax ([(A-srcloc ...) 
                       (map syntax-srcloc (syntax->list #'(A ...)))]
                      [R-srcloc (syntax-srcloc #'R)])
-         #`(make-signature
+         #'(make-signature
             procedure?
             (lambda (v)
               (if (procedure? v)
                   (lambda (args ...)
-                    #,(quasisyntax/loc stx
-                        (wrap R #,(syntax/loc stx (v (wrap A args A-srcloc) ...)) R-srcloc)))
+                    (wrap R (v (wrap A args A-srcloc) ...) R-srcloc))
                   (raise-signature-violation
                    (format "not a procedure: ~e" v)
                    (list term-srcloc))))
@@ -268,14 +298,11 @@
      (identifier? #'id)
      (with-syntax ([S (parse-sig #'S)])
        (with-syntax ([S-srcloc (syntax-srcloc #'S)])
-         #`(asl:define id #,(syntax/loc stx
-                              (wrap S exp S-srcloc)))))]
+         #'(asl:define id (wrap S exp S-srcloc))))]
     [(_ (f [a : Sa] ...) -> Sr exp)
      (with-syntax ([(Sa ...) (parse-sigs #'(Sa ...))]
                    [Sr (parse-sig #'Sr)])
-       #`(asl:define f 
-                     #,(syntax/loc stx
-                         (lambda: ([a : Sa] ...) -> Sr exp))))]))
+       #'(asl:define f (lambda: ([a : Sa] ...) -> Sr exp)))]))
 
 (define-syntax (lambda: stx)
   (syntax-case stx (: ->)
@@ -284,11 +311,9 @@
                    [Sr (parse-sig #'Sr)])
        (with-syntax ([(Sa-srcloc ...) (map syntax-srcloc (syntax->list #'(Sa ...)))]
                      [Sr-srcloc (syntax-srcloc #'Sr)])
-       #`(asl:lambda (a ...)
-                     #,(quasisyntax/loc stx
-                         (let ([a (wrap Sa a Sa-srcloc)] ...)
-                           #,(syntax/loc stx
-                               (wrap Sr exp Sr-srcloc)))))))]))     
+         #'(asl:lambda (a ...)
+                       (let ([a (wrap Sa a Sa-srcloc)] ...)
+                         (wrap Sr exp Sr-srcloc)))))]))     
 
 (define-syntax (or: stx)
   (syntax-case stx ()
