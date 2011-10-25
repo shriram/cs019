@@ -5,7 +5,8 @@
 (require
  (prefix-in 
   asl: 
-  (except-in lang/htdp-advanced 
+  (except-in lang/htdp-advanced
+             memq
              first rest second third fourth fifth sixth seventh eighth
              image? require #%module-begin
              signature : Number Real Rational Integer Natural
@@ -18,6 +19,14 @@
                               (regexp-replace #rx"^asl:" name "")))
                        (all-from-out lang/htdp-advanced)))
 (provide (rename-out (top-level #%module-begin)))
+
+; This is here because memq in ASL is broken:
+; returns non-Boolean answers, which fail in cond predicate positions
+(define (boolean-memq v l)
+  (if (memq v l)
+      #t
+      #f))
+(provide [rename-out [boolean-memq memq]])
 
 (require "impl/lists.rkt")
 (provide [all-from-out "impl/lists.rkt"])
