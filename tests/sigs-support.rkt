@@ -23,9 +23,11 @@
 
 (define (get-text-at-srcloc a-srcloc-vector)
   (define a-srcloc (apply srcloc (vector->list a-srcloc-vector)))
-  (substring (call-with-input-file* #:mode 'text
-               (srcloc-source a-srcloc)
-               port->string)
+  (substring (regexp-replace* "\r"
+                              (call-with-input-file* #:mode 'text
+                                                     (srcloc-source a-srcloc)
+                                                     port->string)
+                              "")
              (sub1 (srcloc-position a-srcloc))
              (+ (sub1 (srcloc-position a-srcloc))
                 (srcloc-span a-srcloc))))

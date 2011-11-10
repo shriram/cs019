@@ -70,6 +70,19 @@
  (list "(Number$ -> Number$)")
  (list 26))
 
+
+(define: (swf-identity [x : swf$]) -> swf$
+  x)
+(check-error (swf-identity 42))
+(check-violation-highlights (swf-identity 42)
+                            ;; the swf structure type definition should highlight
+                            (list "(define-struct: swf ([f : (Number$ -> Number$)]))")
+                            (list 0))
+                            
+ 
+
+
+
 (define-struct: shd1 ([n : Number$]))
 (check-expect
  (shared ([A (make-shd1 N)]

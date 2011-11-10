@@ -129,7 +129,7 @@ The version below, which mutates the setters, does not suffer from this.
                ;; thread, 2011-09-03, "splicing into local".  Should not
                ;; be necessary with next release.
                (define-values (sig-name) 
-                 (first-order-sig pred #'term))))))]))
+                 (first-order-sig pred term-srcloc))))))]))
 
 (define (raise-signature-violation msg srclocs)
   (raise (signature-violation msg (current-continuation-marks) srclocs)))
