@@ -23,6 +23,10 @@
  (list "Number$")
  (list 17))
 
+(define smallvec (vector 0))
+(define: vd : Void$ (vector-set! smallvec 0 1))
+(check-expect (vector-ref smallvec 0) 1)
+
 (define: (g2 [x : Number$]) -> String$ 'not-a-string)
 (check-error (g2 "10"))
 (check-error (g2 10))
@@ -69,6 +73,19 @@
  ;; What should be highlighted is the entire signature
  (list "(Number$ -> Number$)")
  (list 26))
+
+
+(define: (swf-identity [x : swf$]) -> swf$
+  x)
+(check-error (swf-identity 42))
+(check-violation-highlights (swf-identity 42)
+                            ;; the swf structure type definition should highlight
+                            (list "(define-struct: swf ([f : (Number$ -> Number$)]))")
+                            (list 0))
+                            
+ 
+
+
 
 (define-struct: shd1 ([n : Number$]))
 (check-expect

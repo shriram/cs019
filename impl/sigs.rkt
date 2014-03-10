@@ -129,7 +129,7 @@ The version below, which mutates the setters, does not suffer from this.
                ;; thread, 2011-09-03, "splicing into local".  Should not
                ;; be necessary with next release.
                (define-values (sig-name) 
-                 (first-order-sig pred #'term))))))]))
+                 (first-order-sig pred term-srcloc))))))]))
 
 (define (raise-signature-violation msg srclocs)
   (raise (signature-violation msg (current-continuation-marks) srclocs)))
@@ -144,7 +144,7 @@ The version below, which mutates the setters, does not suffer from this.
           ((signature-wrapper sig) val))
       (not-sig-error srcloc)))
 
-(provide Number$ String$ Char$ Boolean$ Any$ Sig: Listof: Vectorof:)
+(provide Number$ String$ Char$ Boolean$ Any$ Void$ Sig: Listof: Vectorof:)
 
 (define-struct signature (pred wrapper ho? srcloc))
 
@@ -264,6 +264,12 @@ The version below, which mutates the setters, does not suffer from this.
     [Any$
      (with-syntax ([term-srcloc (syntax-srcloc stx)])
        #'(first-order-sig (lambda (_) #t) term-srcloc))]))
+
+(define-syntax (Void$ stx)
+  (syntax-case stx (Void$)
+    [Void$
+     (with-syntax ([term-srcloc (syntax-srcloc stx)])
+       #'(first-order-sig void? term-srcloc))]))
 
 ;; proc: is for internal use only.
 ;; Stand-alone procedural signatures are defined using Sig:; e.g.,

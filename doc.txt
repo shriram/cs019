@@ -89,13 +89,15 @@ There are several built-in signatures and signature-makers:
         | String$
         | Char$
         | Boolean$
+        | Void$
         | Image$
 	| Posn$
 	| Key$
         | Any$
 
 The basic signatures correspond to the primitive predicate (Number$ ->
-number?, Image$ -> image?, etc).  Any$ matches any value.
+number?, Image$ -> image?, etc).  Key$ matches strings.  Any$ matches
+any value.
 
         | (Listof: <sig>)
         | (Vectorof: <sig>)
